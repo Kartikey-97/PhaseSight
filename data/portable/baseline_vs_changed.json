@@ -1,0 +1,11 @@
+{
+  "baseline": "data/portable/out_baseline/baseline_summary.json",
+  "current": "data/portable/out_changed/changed_summary.json",
+  "axis": "x",
+  "rms_change_percent": 48.47769634833605,
+  "frequency_change_hz": 0.003071054560789932,
+  "noise_floor_rms_px": null,
+  "noise_floor_multiple": null,
+  "status": "WARNING_CHANGE",
+  "interpretation": "A change flag is a screening result, not a diagnosis of a specific fault."
+}

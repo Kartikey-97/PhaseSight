@@ -1,0 +1,11 @@
+{
+  "baseline": "data/portable/out_baseline/baseline_summary.json",
+  "current": "data/portable/out_camera_only/camera_only_summary.json",
+  "axis": "x",
+  "rms_change_percent": null,
+  "frequency_change_hz": null,
+  "noise_floor_rms_px": null,
+  "noise_floor_multiple": null,
+  "status": "INSUFFICIENT_SIGNAL",
+  "interpretation": "A change flag is a screening result, not a diagnosis of a specific fault."
+}

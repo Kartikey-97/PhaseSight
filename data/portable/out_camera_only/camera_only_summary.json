@@ -1,0 +1,52 @@
+{
+  "video": "data/portable/camera_only.mp4",
+  "fps_used": 60.0,
+  "frames_analysed": 600,
+  "duration_s": 9.966666666666665,
+  "target_roi_xywh": {
+    "x": 360,
+    "y": 110,
+    "width": 160,
+    "height": 160
+  },
+  "anchor_roi_xywh": {
+    "x": 60,
+    "y": 100,
+    "width": 160,
+    "height": 160
+  },
+  "x_axis": {
+    "dominant_frequency_hz": 20.15625000000007,
+    "rms_displacement_px": 0.08234854853541844,
+    "peak_to_median_db": 16.001269146018426,
+    "signal_quality": "CONTAMINATED",
+    "anchor_dominant_frequency_hz": 20.020342364815942,
+    "anchor_peak_to_median_db": 20.27344932411934,
+    "target_dominant_frequency_hz": 20.107705974995085,
+    "second_harmonic_ratio": null,
+    "frequency_resolution_hz": 0.23437500000000083,
+    "sampling_rate_hz": 60.00000000000021
+  },
+  "y_axis": {
+    "dominant_frequency_hz": 19.73134961967821,
+    "rms_displacement_px": 0.06549513586629832,
+    "peak_to_median_db": 20.755647390397392,
+    "signal_quality": "CONTAMINATED",
+    "anchor_dominant_frequency_hz": 19.67463191529471,
+    "anchor_peak_to_median_db": 19.02562483986645,
+    "target_dominant_frequency_hz": 19.726110485289684,
+    "second_harmonic_ratio": null,
+    "frequency_resolution_hz": 0.23437500000000083,
+    "sampling_rate_hz": 60.00000000000021
+  },
+  "mean_min_phase_correlation_response": 0.9481877151054667,
+  "interpretation": "Screening measurement in pixels; not a calibrated vibration diagnosis.",
+  "quality_notes": {
+    "CONTAMINATED": "A strong peak at the same frequency appears in the anchor ROI; inspect the anchor for shared motion, lighting/compression artefacts or a poor reference region.",
+    "LOW_SIGNAL": "No sufficiently prominent, reliable vibration peak was found in this axis."
+  },
+  "outputs": {
+    "csv": "data/portable/out_camera_only/camera_only_motion.csv",
+    "plot": "data/portable/out_camera_only/camera_only_spectrum.png"
+  }
+}
