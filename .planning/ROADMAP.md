@@ -22,6 +22,8 @@
 ### Phase 4: Local Persistence Layer (SQLite + NumPy NPZ) (CURRENT MILESTONE)
 - **Status:** IN PROGRESS 🚀
 - **Deliverables:** `phasesight/storage.py`, SQLite schema for Assets, Baselines, Inspection Runs, and Review Events; NPZ storage for displacement and PSD time series.
+- **Plans:** 1 plan (`04-PLAN.md` / `04-01-PLAN.md`)
+  - [ ] `04-01-PLAN.md` — Local persistence layer, SQLite schema, NPZ array storage, CRUD operations, test suite, and CLI
 - **Exit Check:** Database migrations, record CRUD operations, and fast retrieval of historical runs.
 
 ### Phase 5: Workbench History & Asset Integration
