@@ -47,3 +47,6 @@ htmlcov/
 output/
 rois.json
 validation_results.json
+data/storage/
+*.db
+*.npz

@@ -19,15 +19,15 @@
   - [x] `03-01-PLAN.md` — Statistical Baseline Engine core, unit test matrix, CLI, and Workbench UI
 - **Exit Check:** Automated tests for single-run vs multi-run baseline, zero-MAD edge cases, and confidence gating (16 tests in `tests/test_baseline.py`, 40/40 passing).
 
-### Phase 4: Local Persistence Layer (SQLite + NumPy NPZ) (CURRENT MILESTONE)
-- **Status:** IN PROGRESS 🚀
+### Phase 4: Local Persistence Layer (SQLite + NumPy NPZ)
+- **Status:** COMPLETED ✅
 - **Deliverables:** `phasesight/storage.py`, SQLite schema for Assets, Baselines, Inspection Runs, and Review Events; NPZ storage for displacement and PSD time series.
 - **Plans:** 1 plan (`04-PLAN.md` / `04-01-PLAN.md`)
-  - [ ] `04-01-PLAN.md` — Local persistence layer, SQLite schema, NPZ array storage, CRUD operations, test suite, and CLI
-- **Exit Check:** Database migrations, record CRUD operations, and fast retrieval of historical runs.
+  - [x] `04-01-PLAN.md` — Local persistence layer, SQLite schema, NPZ array storage, CRUD operations, test suite, and CLI
+- **Exit Check:** 15 unit tests in `tests/test_storage.py` (55/55 tests passing across codebase), foreign key cascades verified, and CLI storage commands verified.
 
-### Phase 5: Workbench History & Asset Integration
-- **Status:** PLANNED
+### Phase 5: Workbench History & Asset Integration (CURRENT MILESTONE)
+- **Status:** IN PROGRESS 🚀
 - **Deliverables:** Streamlit UI tabs for Asset Management, Baseline Recording Wizard, and Inspection Run History with status badges and notes.
 - **Exit Check:** Operator can create an asset, record 3 baselines, inspect a new video, and view the comparison log.
 
