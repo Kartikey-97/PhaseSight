@@ -8,6 +8,14 @@ import numpy as np
 import streamlit as st
 
 from phasesight.analysis import compare_inspection_summaries
+from phasesight.baseline import (
+    BaselineEvaluation,
+    BaselineRecord,
+    build_baseline,
+    deserialize_baseline,
+    evaluate_run_against_baseline,
+    serialize_baseline,
+)
 from phasesight.tracker import ROI, check_roi_texture, draw_rois_on_frame, validate_rois
 from phasesight.ui_helpers import (
     DEFAULT_SAMPLE_ANCHOR_ROI,
@@ -322,16 +330,211 @@ def display_inspection_results(summary: dict) -> None:
 
 
 def render_comparison_tab() -> None:
-    st.subheader("Baseline vs. Current Summary Comparison")
+    st.subheader("Baseline Screening & Deviation Comparison")
     st.caption(
-        "Compare two inspection summaries to screen for significant vibration changes. "
-        "WARNING_CHANGE or ALERT_CHANGE indicates a measured change, not a diagnosed machine fault."
+        "Screen an inspection run against an established baseline. "
+        "A Review status indicates a measured statistical shift, not a diagnosed machine fault."
     )
 
-    col1, col2 = st.columns(2)
+    comp_mode = st.radio(
+        "Comparison Methodology:",
+        [
+            "Statistical Baseline Engine (Median + MAD z-score, N ≥ 3)",
+            "Pairwise Single-Run Compare (Percentage Thresholds)",
+        ],
+        horizontal=True,
+    )
 
-    baseline_data: dict | None = None
+    if comp_mode == "Statistical Baseline Engine (Median + MAD z-score, N ≥ 3)":
+        render_statistical_baseline_section()
+    else:
+        render_pairwise_comparison_section()
+
+
+def render_statistical_baseline_section() -> None:
+    col1, col2 = st.columns(2)
+    baseline_record: BaselineRecord | None = None
     current_data: dict | None = None
+
+    with col1:
+        st.markdown("#### Reference Baseline Record")
+        base_src = st.radio(
+            "Baseline Source:",
+            [
+                "Use sample baseline (portable_motor)",
+                "Upload BaselineRecord JSON",
+                "Aggregate ≥ 3 summary JSON files on-the-fly",
+            ],
+            key="stat_base_src",
+        )
+
+        if base_src == "Use sample baseline (portable_motor)":
+            sample_file = Path("data/portable/out_baseline/baseline_summary.json")
+            if sample_file.exists():
+                sample_run = json.loads(sample_file.read_text(encoding="utf-8"))
+                baseline_record = build_baseline([sample_run, sample_run, sample_run], asset_id="portable_motor")
+                st.info(f"Loaded reference baseline (Asset: `portable_motor`, 3 runs, 60 FPS).")
+            else:
+                st.warning("Sample baseline summary not found.")
+        elif base_src == "Upload BaselineRecord JSON":
+            base_json_file = st.file_uploader("Upload baseline JSON:", type=["json"], key="stat_upload_base_rec")
+            if base_json_file is not None:
+                try:
+                    baseline_record = deserialize_baseline(base_json_file.getvalue().decode("utf-8"))
+                    st.success(f"Loaded baseline `{baseline_record.baseline_id}` ({baseline_record.run_count} runs).")
+                except Exception as exc:
+                    st.error(f"Invalid BaselineRecord JSON: {exc}")
+        elif base_src == "Aggregate ≥ 3 summary JSON files on-the-fly":
+            multi_files = st.file_uploader(
+                "Upload ≥ 3 healthy inspection summary JSON files:",
+                type=["json"],
+                accept_multiple_files=True,
+                key="stat_multi_runs",
+            )
+            if multi_files and len(multi_files) >= 3:
+                try:
+                    runs_data = [json.loads(f.getvalue().decode("utf-8")) for f in multi_files]
+                    baseline_record = build_baseline(runs_data, asset_id="uploaded_asset")
+                    st.success(f"Aggregated {len(runs_data)} runs into BaselineRecord `{baseline_record.baseline_id}`.")
+                except Exception as exc:
+                    st.error(f"Failed to build baseline: {exc}")
+            elif multi_files:
+                st.warning(f"Uploaded {len(multi_files)} runs. At least 3 are required for robust statistical aggregation.")
+
+    with col2:
+        st.markdown("#### Current Inspection Run")
+        curr_src = st.radio(
+            "Current Run Source:",
+            [
+                "Use latest analysis result",
+                "Upload inspection JSON",
+                "Use sample changed.mp4 result",
+                "Use sample camera_only.mp4 result",
+            ],
+            key="stat_curr_src",
+        )
+
+        if curr_src == "Use latest analysis result":
+            if "latest_summary" in st.session_state:
+                current_data = st.session_state["latest_summary"]
+                st.info(f"Using latest analysis: {st.session_state.get('latest_video_name', 'current')}")
+            else:
+                st.warning("No video has been analysed yet in tab 1. Run an analysis or upload a summary.")
+        elif curr_src == "Upload inspection JSON":
+            curr_file = st.file_uploader("Upload current JSON:", type=["json"], key="stat_upload_curr_json")
+            if curr_file is not None:
+                try:
+                    current_data = json.loads(curr_file.getvalue().decode("utf-8"))
+                    st.success(f"Loaded current run: {curr_file.name}")
+                except Exception as exc:
+                    st.error(f"Invalid JSON: {exc}")
+        elif curr_src == "Use sample changed.mp4 result":
+            sample_changed = Path("data/portable/out_changed/changed_summary.json")
+            if sample_changed.exists():
+                current_data = json.loads(sample_changed.read_text(encoding="utf-8"))
+                st.info(f"Loaded sample changed result (`data/portable/changed.mp4`).")
+        elif curr_src == "Use sample camera_only.mp4 result":
+            sample_null = Path("data/portable/out_camera_only/camera_only_summary.json")
+            if sample_null.exists():
+                current_data = json.loads(sample_null.read_text(encoding="utf-8"))
+                st.info(f"Loaded sample camera-only null result (`data/portable/camera_only.mp4`).")
+
+    st.markdown("#### Screening Thresholds")
+    col_p1, col_p2 = st.columns(2)
+    with col_p1:
+        eval_axis = st.selectbox("Axis to Evaluate:", ["x", "y", "both"], index=0, help="Evaluate machine vibration axis.")
+    with col_p2:
+        z_thresh = st.number_input(
+            "Robust z-score threshold (|z|)",
+            min_value=1.0,
+            max_value=10.0,
+            value=3.0,
+            step=0.5,
+            help="Statistical deviation threshold. 3.0 aligns with approximately 3 standard deviations in Gaussian theory.",
+        )
+
+    if st.button("Evaluate Against Statistical Baseline", type="primary"):
+        if baseline_record is None or current_data is None:
+            st.error("Both a valid BaselineRecord and a current inspection run are required.")
+            return
+
+        try:
+            evaluation = evaluate_run_against_baseline(
+                current_data,
+                baseline_record,
+                z_threshold=float(z_thresh),
+                axis=eval_axis,
+            )
+        except Exception as exc:
+            st.error(f"Evaluation failed: {exc}")
+            return
+
+        st.markdown("---")
+        st.subheader("Statistical Screening Verdict")
+
+        # Verdict Banner
+        status = evaluation.status
+        if status == "Normal":
+            st.success(f"### Status: NORMAL")
+            st.caption("All monitored vibration features are within normal baseline statistical bounds (|z| < 3.0).")
+        elif status == "Review":
+            st.error(f"### Status: REVIEW")
+            st.caption("One or more vibration features exceed the robust baseline deviation threshold.")
+        elif status == "Low confidence":
+            st.warning(f"### Status: LOW CONFIDENCE")
+            st.caption("Signal quality gate failed. Cannot reliably compare against baseline.")
+
+        if not evaluation.confidence_passed:
+            st.markdown("##### Confidence Gate Failure Reasons:")
+            for reason in evaluation.reasons:
+                st.write(f"- ⚠️ {reason}")
+
+        if evaluation.trigger_features:
+            st.markdown("##### Trigger Features (|z| ≥ threshold):")
+            for trig in evaluation.trigger_features:
+                st.write(f"- 🚨 **{trig}**")
+
+        # Feature Deviations Table
+        if evaluation.deviations:
+            st.markdown("##### Detailed Feature Deviation Table")
+            rows = []
+            z_chart_data = {}
+            for name, dev in evaluation.deviations.items():
+                z_val = f"{dev.z_robust:+.2f}" if dev.z_robust is not None else "N/A"
+                c_val = f"{dev.current_value:.4f}" if dev.current_value is not None else "None"
+                b_med = f"{dev.baseline_median:.4f}" if dev.baseline_median is not None else "None"
+                b_mad = f"{dev.baseline_mad:.4f}" if dev.baseline_mad is not None else "None"
+                rows.append({
+                    "Feature": dev.feature_name,
+                    "Axis": dev.axis.upper(),
+                    "Current": c_val,
+                    "Baseline Median": b_med,
+                    "Baseline MAD": b_mad,
+                    "z_robust": z_val,
+                    "Flag": "🚨 TRIGGER" if dev.is_trigger else "✅ Normal",
+                })
+                if dev.z_robust is not None:
+                    z_chart_data[f"{dev.axis.upper()} {dev.feature_name}"] = dev.z_robust
+
+            st.dataframe(rows, use_container_width=True)
+
+            if z_chart_data:
+                st.markdown("##### Standardized Robust Deviations (z-score)")
+                st.bar_chart(z_chart_data)
+                st.caption(f"Horizontal reference threshold is ±{z_thresh:.1f} z.")
+
+        st.warning(f"⚠️ **Disclaimer:** {evaluation.interpretation}")
+
+        report_json = evaluation.to_json(indent=2)
+        st.download_button(
+            "📥 Download Baseline Assessment Report (JSON)",
+            data=report_json.encode("utf-8"),
+            file_name=f"assessment_{evaluation.asset_id}.json",
+            mime="application/json",
+        )
+
+
+def render_pairwise_comparison_section() -> None:
 
     with col1:
         st.markdown("#### Baseline Summary")

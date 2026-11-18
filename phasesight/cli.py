@@ -5,6 +5,12 @@ import json
 from pathlib import Path
 
 from .analysis import compare_inspection_summaries
+from .baseline import (
+    build_baseline,
+    deserialize_baseline,
+    evaluate_run_against_baseline,
+    serialize_baseline,
+)
 from .synthetic import SyntheticConfig, make_scene, write_video
 from .validation import run_validation_suite
 from .video import analyse_video, parse_roi
@@ -53,6 +59,23 @@ def _build_parser() -> argparse.ArgumentParser:
     ui = sub.add_parser("ui", help="Launch the local Streamlit inspection interface")
     ui.add_argument("--port", type=int, default=8501, help="Port to run Streamlit on")
     ui.add_argument("--host", type=str, default="localhost", help="Host address to bind to")
+
+    build_base = sub.add_parser(
+        "build-baseline",
+        help="Aggregate >= 3 healthy inspection runs into an immutable BaselineRecord",
+    )
+    build_base.add_argument("runs", nargs="+", type=Path, help="Paths to >= 3 inspection summary JSON files")
+    build_base.add_argument("--asset-id", type=str, default="default_asset", help="Asset identifier")
+    build_base.add_argument("--min-runs", type=int, default=3, help="Minimum required runs")
+    build_base.add_argument("--notes", type=str, default="", help="Optional notes on operating condition")
+    build_base.add_argument("--out", type=Path, default=Path("baseline.json"), help="Output BaselineRecord JSON path")
+
+    assess = sub.add_parser("assess", help="Screen a current inspection summary against a BaselineRecord")
+    assess.add_argument("current", type=Path, help="Path to current inspection summary JSON")
+    assess.add_argument("baseline", type=Path, help="Path to BaselineRecord JSON")
+    assess.add_argument("--threshold", type=float, default=3.0, help="Robust z-score threshold (default: 3.0)")
+    assess.add_argument("--axis", choices=["x", "y", "both"], default="both", help="Axis to evaluate")
+    assess.add_argument("--out", type=Path, default=Path("assessment_report.json"), help="Output assessment JSON path")
     return parser
 
 
@@ -139,6 +162,80 @@ def main() -> None:
         ]
         print(f"Starting PhaseSight UI on http://{args.host}:{args.port}...")
         subprocess.run(cmd, check=True)
+        return
+
+    if args.command == "build-baseline":
+        runs_data = [json.loads(p.read_text(encoding="utf-8")) for p in args.runs]
+        baseline = build_baseline(
+            runs_data,
+            asset_id=args.asset_id,
+            min_runs=args.min_runs,
+            notes=args.notes,
+        )
+        serialize_baseline(baseline, args.out)
+        print(f"\n================ BASELINE RECORD CREATED ================")
+        print(f"Asset ID:        {baseline.asset_id}")
+        print(f"Baseline ID:     {baseline.baseline_id}")
+        print(f"Runs aggregated: {baseline.run_count}")
+        print(f"Sampling rate:   {baseline.sampling_rate_hz:.2f} Hz")
+        print(f"Target ROI:      {baseline.target_roi}")
+        print(f"Anchor ROI:      {baseline.anchor_roi}")
+        print(f"---------------------------------------------------------")
+        print(
+            f"X-Axis Dominant Freq: {baseline.x_axis.dominant_frequency_hz.median:.3f} Hz "
+            f"(MAD: {baseline.x_axis.dominant_frequency_hz.mad:.4f})"
+        )
+        print(
+            f"X-Axis RMS Motion:    {baseline.x_axis.rms_displacement_px.median:.4f} px "
+            f"(MAD: {baseline.x_axis.rms_displacement_px.mad:.4f})"
+        )
+        print(
+            f"X-Axis Peak dB:       {baseline.x_axis.peak_to_median_db.median:.1f} dB "
+            f"(MAD: {baseline.x_axis.peak_to_median_db.mad:.2f})"
+        )
+        if (
+            baseline.x_axis.second_harmonic_ratio
+            and baseline.x_axis.second_harmonic_ratio.median is not None
+        ):
+            print(f"X-Axis 2x Harmonic:   {baseline.x_axis.second_harmonic_ratio.median:.4f}")
+        print(f"---------------------------------------------------------")
+        print(f"Saved BaselineRecord to: {args.out}")
+        return
+
+    if args.command == "assess":
+        curr_data = json.loads(args.current.read_text(encoding="utf-8"))
+        base_record = deserialize_baseline(args.baseline)
+        evaluation = evaluate_run_against_baseline(
+            curr_data,
+            base_record,
+            z_threshold=args.threshold,
+            axis=args.axis,
+        )
+        args.out.parent.mkdir(parents=True, exist_ok=True)
+        args.out.write_text(evaluation.to_json(indent=2), encoding="utf-8")
+
+        print(f"\n================ BASELINE ASSESSMENT ================")
+        print(f"Status:       {evaluation.status}")
+        print(f"Asset ID:     {evaluation.asset_id}")
+        print(f"Baseline ID:  {evaluation.baseline_id}")
+        print(f"Evaluated At: {evaluation.evaluated_at}")
+        print(f"Threshold:    |z| >= {evaluation.z_threshold:.1f}")
+        print(f"-----------------------------------------------------")
+        if not evaluation.confidence_passed:
+            print("Confidence Gate: FAILED")
+            for reason in evaluation.reasons:
+                print(f"  - {reason}")
+        else:
+            print("Confidence Gate: PASSED")
+            if evaluation.trigger_features:
+                print(f"Triggers Flagged ({len(evaluation.trigger_features)}):")
+                for trig in evaluation.trigger_features:
+                    print(f"  - {trig}")
+            else:
+                print("No features exceeded robust threshold.")
+        print(f"-----------------------------------------------------")
+        print(f"Interpretation: {evaluation.interpretation}")
+        print(f"Saved evaluation to: {args.out}")
         return
 
 

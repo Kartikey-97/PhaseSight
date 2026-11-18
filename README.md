@@ -115,6 +115,25 @@ phasesight compare baseline_summary.json current_summary.json \
 
 This requires both the baseline and current RMS displacement to be at least 3 times the measured machine-off RMS for that axis. The multiplier is provisional and should be calibrated with real recordings.
 
+### Multi-run statistical baseline screening
+
+To aggregate $\ge 3$ healthy baseline captures into an immutable statistical `BaselineRecord` using Median and scaled MAD:
+
+```bash
+phasesight build-baseline run1_summary.json run2_summary.json run3_summary.json \
+  --asset-id "motor_01" --out baseline_motor.json
+```
+
+To screen a current inspection against the statistical baseline:
+
+```bash
+phasesight assess current_summary.json baseline_motor.json --axis x --threshold 3.0
+```
+
+The assessment evaluates:
+- **Confidence Gate:** Verifies `signal_quality == 'VALID'` and confirms no anchor contamination.
+- **Review Gate:** Standardized robust deviation $z = \frac{x - \text{median}}{1.4826 \cdot \text{MAD} + \epsilon}$ against threshold (default 3.0), classifying the capture as `Normal`, `Review`, or `Low confidence`.
+
 ## 5. Local inspection UI (Streamlit)
 
 For an interactive workbench, launch the local-first Streamlit interface:
