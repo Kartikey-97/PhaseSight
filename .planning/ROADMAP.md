@@ -12,15 +12,15 @@
 - **Deliverables:** `phasesight/app.py`, `phasesight/ui_helpers.py`, real-time ROI validation, spectra visualization, CSV/PNG/JSON downloads, 1-to-1 comparison.
 - **Exit Check:** 24 automated tests pass (including headless `AppTest`), baseline vs changed returns WARNING_CHANGE, null returns CONTAMINATED.
 
-### Phase 3: Statistical Baseline Engine (CURRENT MILESTONE)
-- **Status:** IN PROGRESS 🚀
+### Phase 3: Statistical Baseline Engine
+- **Status:** COMPLETED ✅
 - **Deliverables:** `phasesight/baseline.py`, multi-run aggregation ($\ge 3$ captures), Median + MAD statistics, robust deviation score $z_{\text{robust}} = \frac{x - \text{median}}{1.4826 \times \text{MAD} + \epsilon}$, Normal / Review / Low confidence classification.
 - **Plans:** 1 plan (`03-PLAN.md` / `03-01-PLAN.md`)
-  - [ ] `03-01-PLAN.md` — Statistical Baseline Engine core, unit test matrix, CLI, and Workbench UI
-- **Exit Check:** Automated tests for single-run vs multi-run baseline, zero-MAD edge cases, and confidence gating.
+  - [x] `03-01-PLAN.md` — Statistical Baseline Engine core, unit test matrix, CLI, and Workbench UI
+- **Exit Check:** Automated tests for single-run vs multi-run baseline, zero-MAD edge cases, and confidence gating (16 tests in `tests/test_baseline.py`, 40/40 passing).
 
-### Phase 4: Local Persistence Layer (SQLite + NumPy NPZ)
-- **Status:** PLANNED
+### Phase 4: Local Persistence Layer (SQLite + NumPy NPZ) (CURRENT MILESTONE)
+- **Status:** IN PROGRESS 🚀
 - **Deliverables:** `phasesight/storage.py`, SQLite schema for Assets, Baselines, Inspection Runs, and Review Events; NPZ storage for displacement and PSD time series.
 - **Exit Check:** Database migrations, record CRUD operations, and fast retrieval of historical runs.
 
