@@ -36,6 +36,8 @@
 ### Phase 6: Live Webcam Stream & Dropped Frame Handling (CURRENT MILESTONE)
 - **Status:** IN PROGRESS 🚀
 - **Deliverables:** Support `camera_id` in video capture, fixed-duration live buffer, dropped frame and timestamp regularity verification.
+- **Plans:** 1 plan (`06-PLAN.md` / `06-01-PLAN.md`)
+  - [ ] `06-01-PLAN.md` — Live webcam capture engine, dropped frame & jitter stability quantification, CLI capture command, and Streamlit operator workbench integration
 - **Exit Check:** Live webcam preview and capture with constant-frame-rate verification.
 
 ### Phase 7: Final Validation & Demonstration Package
