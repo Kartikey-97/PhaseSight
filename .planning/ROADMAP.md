@@ -29,6 +29,8 @@
 ### Phase 5: Workbench History & Asset Integration (CURRENT MILESTONE)
 - **Status:** IN PROGRESS 🚀
 - **Deliverables:** Streamlit UI tabs for Asset Management, Baseline Recording Wizard, and Inspection Run History with status badges and notes.
+- **Plans:** 1 plan (`05-PLAN.md` / `05-01-PLAN.md`)
+  - [ ] `05-01-PLAN.md` — Workbench history, asset management, baseline wizard, inspection history with NPZ trace exploration, review event logging, and headless UI testing
 - **Exit Check:** Operator can create an asset, record 3 baselines, inspect a new video, and view the comparison log.
 
 ### Phase 6: Live Webcam Stream & Dropped Frame Handling
