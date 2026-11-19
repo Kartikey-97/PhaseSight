@@ -40,9 +40,9 @@
   - [x] `06-01-PLAN.md` — Live webcam capture engine, dropped frame & jitter stability quantification, CLI capture command, and Streamlit operator workbench integration
 - **Exit Check:** 13 unit tests in `tests/test_capture.py` and 15 tests in `tests/test_ui.py` (79/79 passing across codebase), live webcam preview and capture with constant-frame-rate verification and gating.
 
-### Phase 7: Final Validation & Demonstration Package (CURRENT MILESTONE)
-- **Status:** IN PROGRESS 🚀
-- **Deliverables:** Synthetic test matrix T1–T6 verification, benchmark dataset evaluation, screenshots, user guide, and demo walkthrough.
+### Phase 7: Final Validation & Demonstration Package
+- **Status:** COMPLETED ✅
+- **Deliverables:** `phasesight/validation.py` implementing Protocols T1 through T6 and `run_full_validation_matrix()`, extended CLI `phasesight validate` with `--test`, `--legacy`, and `--json`, `tests/test_validation_matrix.py` (89 total tests passing), `DEMO_GUIDE.md` 8-stage interactive evaluator walkthrough, hardened `README.md` and `TEST_REPORT.md` with complete empirical evidence, public benchmark dataset evaluation protocols (Mendeley Rotor at 500 FPS + eddy-current displacement sensors), and non-negotiable boundaries.
 - **Plans:** 1 plan (`07-PLAN.md` / `07-01-PLAN.md`)
-  - [ ] `07-01-PLAN.md` — Proposal Page 5 validation matrix (T1–T6), CLI validate extension, DEMO_GUIDE.md 8-stage walkthrough, and documentation hardening (README.md, TEST_REPORT.md)
-- **Exit Check:** 85+ passing tests in pytest across all 9 modules, 6/6 proposal validation protocols passing with verified numerical criteria, CLI validate outputting structured table and JSON, DEMO_GUIDE.md walkthrough ready for evaluators, and hardened README.md and TEST_REPORT.md.
+  - [x] `07-01-PLAN.md` — Proposal Page 5 validation matrix (T1–T6), CLI validate extension, DEMO_GUIDE.md 8-stage walkthrough, and documentation hardening (README.md, TEST_REPORT.md)
+- **Exit Check:** 89 passing tests in pytest across all 9 modules (100% pass rate), 6/6 proposal validation protocols passing with verified numerical criteria, CLI validate outputting structured table and JSON, DEMO_GUIDE.md walkthrough ready for evaluators, and hardened README.md and TEST_REPORT.md.
