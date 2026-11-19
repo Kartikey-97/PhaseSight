@@ -112,3 +112,221 @@ def test_draw_rois_on_frame_renders_boxes():
     assert annotated.shape == frame.shape
     # Check that colors have been written (not all zero)
     assert np.any(annotated > 0)
+
+
+# ==============================================================================
+# Task 1: Dynamic ROI Quality Validation Regression Tests (Scenarios 1-8)
+# ==============================================================================
+
+def test_dynamic_roi_regression_1_normal_moving_textured():
+    """Scenario 1: Normal moving textured ROI maintains valid samples and high response."""
+    config = SyntheticConfig(
+        duration_s=1.0,
+        vibration_frequency_hz=8.5,
+        vibration_amplitude_px=0.5,
+        camera_amplitude_px=0.2,
+        seed=10,
+    )
+    frames, truth = make_scene(config)
+    tracker = PhaseCorrelationTracker(frames[0], DEFAULT_TARGET_ROI, DEFAULT_ANCHOR_ROI)
+
+    samples = [tracker.process(frame, i / config.fps) for i, frame in enumerate(frames[1:], start=1)]
+    assert len(samples) > 0
+    for s in samples:
+        assert s.valid is True
+        assert s.rejection_reason is None
+        assert np.isfinite(s.relative_dx_px)
+        assert np.isfinite(s.target_dx_px)
+        assert np.isfinite(s.anchor_dx_px)
+        assert s.target_response >= tracker.min_response
+        assert s.anchor_response >= tracker.min_response
+
+
+def test_dynamic_roi_regression_2_black_halfway():
+    """Scenario 2: ROI becomes completely black halfway through recording."""
+    config = SyntheticConfig(duration_s=1.0, seed=11)
+    frames, _ = make_scene(config)
+    tracker = PhaseCorrelationTracker(frames[0], DEFAULT_TARGET_ROI, DEFAULT_ANCHOR_ROI)
+
+    halfway = len(frames) // 2
+    for i, frame in enumerate(frames[1:], start=1):
+        test_frame = frame.copy()
+        if i >= halfway:
+            # Black out target ROI
+            test_frame[
+                DEFAULT_TARGET_ROI.y : DEFAULT_TARGET_ROI.y + DEFAULT_TARGET_ROI.height,
+                DEFAULT_TARGET_ROI.x : DEFAULT_TARGET_ROI.x + DEFAULT_TARGET_ROI.width,
+            ] = 0
+
+        sample = tracker.process(test_frame, i / config.fps)
+        if i < halfway:
+            assert sample.valid is True
+            assert sample.rejection_reason is None
+            assert np.isfinite(sample.relative_dx_px)
+        else:
+            assert sample.valid is False
+            assert "target_low_texture" in sample.rejection_reason
+            assert np.isnan(sample.relative_dx_px)
+            assert np.isnan(sample.target_dx_px)
+            assert sample.target_response == 0.0
+            # CRITICAL: Verify no artificial half-width displacement jumps (160/2 = 80 px)
+            assert sample.target_dx_px != DEFAULT_TARGET_ROI.width / 2.0
+            assert sample.relative_dx_px != DEFAULT_TARGET_ROI.width / 2.0
+
+
+def test_dynamic_roi_regression_3_uniformly_white():
+    """Scenario 3: ROI becomes uniformly white."""
+    config = SyntheticConfig(duration_s=0.5, seed=12)
+    frames, _ = make_scene(config)
+    tracker = PhaseCorrelationTracker(frames[0], DEFAULT_TARGET_ROI, DEFAULT_ANCHOR_ROI)
+
+    white_frame = frames[1].copy()
+    white_frame[
+        DEFAULT_TARGET_ROI.y : DEFAULT_TARGET_ROI.y + DEFAULT_TARGET_ROI.height,
+        DEFAULT_TARGET_ROI.x : DEFAULT_TARGET_ROI.x + DEFAULT_TARGET_ROI.width,
+    ] = 255
+
+    sample = tracker.process(white_frame, 1 / config.fps)
+    assert sample.valid is False
+    assert "target_low_texture" in sample.rejection_reason
+    assert np.isnan(sample.relative_dx_px)
+    assert np.isnan(sample.target_dx_px)
+    assert sample.target_response == 0.0
+    assert sample.target_dx_px != DEFAULT_TARGET_ROI.width / 2.0
+
+
+def test_dynamic_roi_regression_4_gradual_contrast_loss():
+    """Scenario 4: ROI becomes low contrast gradually and is rejected when std drops."""
+    config = SyntheticConfig(duration_s=1.0, seed=13)
+    frames, _ = make_scene(config)
+    tracker = PhaseCorrelationTracker(frames[0], DEFAULT_TARGET_ROI, DEFAULT_ANCHOR_ROI, min_texture_std=2.0)
+
+    # Frame with original contrast: valid
+    s_full = tracker.process(frames[1], 1 / config.fps)
+    assert s_full.valid is True
+
+    # Gradually fade contrast towards uniform gray (std drops)
+    faded_frame = frames[1].copy().astype(np.float32)
+    t_crop = faded_frame[
+        DEFAULT_TARGET_ROI.y : DEFAULT_TARGET_ROI.y + DEFAULT_TARGET_ROI.height,
+        DEFAULT_TARGET_ROI.x : DEFAULT_TARGET_ROI.x + DEFAULT_TARGET_ROI.width,
+    ]
+    mean_val = np.mean(t_crop)
+    # Scale patch contrast to standard deviation of 1.0 (< min_texture_std 2.0)
+    current_std = np.std(t_crop)
+    faded_crop = mean_val + (t_crop - mean_val) * (1.0 / current_std)
+    faded_frame[
+        DEFAULT_TARGET_ROI.y : DEFAULT_TARGET_ROI.y + DEFAULT_TARGET_ROI.height,
+        DEFAULT_TARGET_ROI.x : DEFAULT_TARGET_ROI.x + DEFAULT_TARGET_ROI.width,
+    ] = np.clip(faded_crop, 0, 255)
+
+    s_faded = tracker.process(faded_frame.astype(np.uint8), 2 / config.fps)
+    assert s_faded.valid is False
+    assert "target_low_texture" in s_faded.rejection_reason
+    assert np.isnan(s_faded.relative_dx_px)
+
+
+def test_dynamic_roi_regression_5_temporary_texture_loss_and_recovery():
+    """Scenario 5: ROI temporarily loses texture and later recovers cleanly."""
+    config = SyntheticConfig(duration_s=1.0, seed=14)
+    frames, _ = make_scene(config)
+    tracker = PhaseCorrelationTracker(frames[0], DEFAULT_TARGET_ROI, DEFAULT_ANCHOR_ROI)
+
+    # Sequence: 5 normal frames -> 5 blank frames -> 5 normal frames
+    results = []
+    for i, frame in enumerate(frames[1:16], start=1):
+        f = frame.copy()
+        if 5 <= i <= 10:
+            f[
+                DEFAULT_TARGET_ROI.y : DEFAULT_TARGET_ROI.y + DEFAULT_TARGET_ROI.height,
+                DEFAULT_TARGET_ROI.x : DEFAULT_TARGET_ROI.x + DEFAULT_TARGET_ROI.width,
+            ] = 128
+        results.append(tracker.process(f, i / config.fps))
+
+    # Before drop
+    for s in results[0:4]:
+        assert s.valid is True
+        assert np.isfinite(s.relative_dx_px)
+
+    # During drop
+    for s in results[4:10]:
+        assert s.valid is False
+        assert "target_low_texture" in s.rejection_reason
+        assert np.isnan(s.relative_dx_px)
+
+    # After recovery
+    for s in results[10:]:
+        assert s.valid is True
+        assert s.rejection_reason is None
+        assert np.isfinite(s.relative_dx_px)
+        assert s.target_response >= tracker.min_response
+
+
+def test_dynamic_roi_regression_6_target_loses_texture_anchor_valid():
+    """Scenario 6: Target loses texture while anchor remains valid."""
+    config = SyntheticConfig(duration_s=0.5, seed=15)
+    frames, _ = make_scene(config)
+    tracker = PhaseCorrelationTracker(frames[0], DEFAULT_TARGET_ROI, DEFAULT_ANCHOR_ROI)
+
+    test_frame = frames[1].copy()
+    test_frame[
+        DEFAULT_TARGET_ROI.y : DEFAULT_TARGET_ROI.y + DEFAULT_TARGET_ROI.height,
+        DEFAULT_TARGET_ROI.x : DEFAULT_TARGET_ROI.x + DEFAULT_TARGET_ROI.width,
+    ] = 50
+
+    sample = tracker.process(test_frame, 1 / config.fps)
+    assert sample.valid is False
+    assert "target_low_texture" in sample.rejection_reason
+    assert "anchor_low_texture" not in sample.rejection_reason
+    assert np.isnan(sample.relative_dx_px)
+
+
+def test_dynamic_roi_regression_7_anchor_loses_texture_target_valid():
+    """Scenario 7: Anchor loses texture while target remains valid."""
+    config = SyntheticConfig(duration_s=0.5, seed=16)
+    frames, _ = make_scene(config)
+    tracker = PhaseCorrelationTracker(frames[0], DEFAULT_TARGET_ROI, DEFAULT_ANCHOR_ROI)
+
+    test_frame = frames[1].copy()
+    test_frame[
+        DEFAULT_ANCHOR_ROI.y : DEFAULT_ANCHOR_ROI.y + DEFAULT_ANCHOR_ROI.height,
+        DEFAULT_ANCHOR_ROI.x : DEFAULT_ANCHOR_ROI.x + DEFAULT_ANCHOR_ROI.width,
+    ] = 50
+
+    sample = tracker.process(test_frame, 1 / config.fps)
+    assert sample.valid is False
+    assert "anchor_low_texture" in sample.rejection_reason
+    assert "target_low_texture" not in sample.rejection_reason
+    assert np.isnan(sample.relative_dx_px)
+
+
+def test_dynamic_roi_regression_8_both_rois_invalid():
+    """Scenario 8: Both ROIs become invalid simultaneously."""
+    config = SyntheticConfig(duration_s=0.5, seed=17)
+    frames, _ = make_scene(config)
+    tracker = PhaseCorrelationTracker(frames[0], DEFAULT_TARGET_ROI, DEFAULT_ANCHOR_ROI)
+
+    test_frame = np.zeros_like(frames[1])
+
+    sample = tracker.process(test_frame, 1 / config.fps)
+    assert sample.valid is False
+    assert "target_low_texture" in sample.rejection_reason
+    assert "anchor_low_texture" in sample.rejection_reason
+    assert np.isnan(sample.relative_dx_px)
+
+
+def test_dynamic_roi_non_finite_rejection():
+    """Verify non-finite pixel values (NaN/inf) are explicitly caught and rejected."""
+    config = SyntheticConfig(duration_s=0.5, seed=18)
+    frames, _ = make_scene(config)
+    tracker = PhaseCorrelationTracker(frames[0], DEFAULT_TARGET_ROI, DEFAULT_ANCHOR_ROI)
+
+    test_frame = frames[1].copy().astype(np.float32)
+    # Inject NaN into target ROI
+    test_frame[DEFAULT_TARGET_ROI.y + 10, DEFAULT_TARGET_ROI.x + 10] = np.nan
+
+    sample = tracker.process(test_frame, 1 / config.fps)
+    assert sample.valid is False
+    assert "target_non_finite" in sample.rejection_reason
+    assert np.isnan(sample.relative_dx_px)
+

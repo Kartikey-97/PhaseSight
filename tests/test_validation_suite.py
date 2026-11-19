@@ -9,4 +9,8 @@ def test_deterministic_validation_suite_passes():
     assert null_case["signal_quality"] == "LOW_SIGNAL"
     harmonic_case = next(result for result in results if "2x harmonic" in result["name"])
     clean_case = next(result for result in results if result["name"] == "clean target vibration")
-    assert harmonic_case["second_harmonic_ratio"] > clean_case["second_harmonic_ratio"] * 10
+    # Clean target vibration has no harmonic distortion and must be None
+    assert clean_case["second_harmonic_ratio"] is None
+    # Injected 2x harmonic case must detect genuine harmonic
+    assert harmonic_case["second_harmonic_ratio"] is not None
+    assert harmonic_case["second_harmonic_ratio"] > 0.04

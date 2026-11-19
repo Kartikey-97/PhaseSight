@@ -67,11 +67,16 @@ def analyse_displacement(
     min_frequency_hz: float = 0.5,
     max_frequency_hz: float | None = None,
     nperseg: int = 256,
+    min_harmonic_prominence_db: float = 10.0,
+    max_tolerated_gap_ratio: float = 1.5,
+    max_tolerated_jitter: float = 0.15,
 ) -> SpectrumResult:
     """Estimate dominant frequency and displacement RMS from a video trace.
 
     The function accepts timestamped data, checks sample timing, and resamples
     small timestamp irregularities onto a uniform grid before Welch analysis.
+    It rejects severe timing jitter or large missing intervals (>1.5x median dt)
+    to prevent unvalidated interpolation from creating false vibration peaks.
     It never reports mm/s: the output remains in image pixels.
     """
     t = np.asarray(timestamps_s, dtype=np.float64)
@@ -91,10 +96,24 @@ def analyse_displacement(
     if not np.isfinite(fs) or fs <= 0:
         raise ValueError("Could not estimate a valid sampling rate")
 
-    # Welch assumes uniformly sampled data. Interpolate only when timestamp
+    max_gap_ratio = float(np.max(dt) / median_dt) if median_dt > 0 else 0.0
+    jitter_fraction = float(np.std(dt) / median_dt) if median_dt > 0 else 0.0
+
+    if max_gap_ratio > max_tolerated_gap_ratio:
+        raise ValueError(
+            f"Severe timestamp gap detected: max frame interval {float(np.max(dt)):.4f}s is {max_gap_ratio:.1f}x "
+            f"the median interval {median_dt:.4f}s (> {max_tolerated_gap_ratio:.1f}x threshold). "
+            "Cannot interpolate unvalidated missing intervals for vibration analysis."
+        )
+    if jitter_fraction > max_tolerated_jitter:
+        raise ValueError(
+            f"Severe timestamp jitter detected: jitter ratio {jitter_fraction:.2%} exceeds "
+            f"stability threshold {max_tolerated_jitter:.2%}. Resampling would distort spectral estimation."
+        )
+
+    # Welch assumes uniformly sampled data. Resample only when minor timestamp
     # jitter is present; the report exposes the inferred sampling rate.
     uniform_t = np.linspace(t[0], t[-1], len(t), dtype=np.float64)
-    jitter_fraction = float(np.std(dt) / median_dt)
     if jitter_fraction > 0.002 or not np.allclose(dt, median_dt, rtol=2e-3, atol=1e-9):
         x = np.interp(uniform_t, t, x)
         t = uniform_t
@@ -145,10 +164,43 @@ def analyse_displacement(
         half_width = max(1.5 * (frequencies[1] - frequencies[0]), 0.15)
         fundamental_band = np.abs(frequencies - peak_frequency) <= half_width
         harmonic_band = np.abs(frequencies - second_harmonic_hz) <= half_width
-        fundamental_power = float(np.sum(psd[fundamental_band]))
-        harmonic_power = float(np.sum(psd[harmonic_band]))
-        if fundamental_power > 1e-20:
-            second_harmonic_ratio = harmonic_power / fundamental_power
+        harmonic_indices = np.flatnonzero(harmonic_band)
+
+        if len(harmonic_indices) > 0:
+            cand_idx = int(harmonic_indices[np.argmax(psd[harmonic_indices])])
+            cand_power = float(psd[cand_idx])
+
+            # Require strict local maximum within spectrum to reject monotonic sidelobes
+            is_local_max = bool(
+                0 < cand_idx < len(psd) - 1
+                and psd[cand_idx] > psd[cand_idx - 1]
+                and psd[cand_idx] > psd[cand_idx + 1]
+            )
+
+            # Measure local background around 2x harmonic (+- 3.0 Hz excluding cand peak & fundamental)
+            local_mask = (frequencies >= max(min_frequency_hz, second_harmonic_hz - 3.0)) & (
+                frequencies <= min(upper, second_harmonic_hz + 3.0)
+            )
+            local_indices = np.flatnonzero(local_mask)
+            local_bg_indices = [
+                i for i in local_indices
+                if abs(i - cand_idx) > 2 and abs(i - peak_index) > 3
+            ]
+            if len(local_bg_indices) >= 3:
+                local_bg = float(np.median(psd[local_bg_indices]))
+            else:
+                bg_indices = band_indices[np.abs(band_indices - peak_index) > 2]
+                local_bg = float(np.median(psd[bg_indices])) if len(bg_indices) else 1e-30
+
+            harmonic_prominence_db = float(
+                10.0 * np.log10(max(cand_power, 1e-30) / max(local_bg, 1e-30))
+            )
+
+            if is_local_max and harmonic_prominence_db >= min_harmonic_prominence_db:
+                fundamental_power = float(np.sum(psd[fundamental_band]))
+                harmonic_power = float(np.sum(psd[harmonic_band]))
+                if fundamental_power > 1e-20:
+                    second_harmonic_ratio = harmonic_power / fundamental_power
 
     return SpectrumResult(
         frequencies_hz=frequencies,

@@ -38,6 +38,8 @@ class MotionSample:
     relative_dy_px: float
     target_response: float
     anchor_response: float
+    valid: bool = True
+    rejection_reason: str | None = None
 
 
 class PhaseCorrelationTracker:
@@ -52,6 +54,9 @@ class PhaseCorrelationTracker:
         first_frame: np.ndarray,
         target_roi: ROI,
         anchor_roi: ROI,
+        *,
+        min_texture_std: float = 2.0,
+        min_response: float = 0.15,
     ) -> None:
         gray = to_gray_float(first_frame)
         target_roi.validate(gray.shape, name="target_roi")
@@ -61,9 +66,23 @@ class PhaseCorrelationTracker:
 
         self.target_roi = target_roi
         self.anchor_roi = anchor_roi
+        self.min_texture_std = float(min_texture_std)
+        self.min_response = float(min_response)
         self._frame_shape = gray.shape
         self._target_ref = np.ascontiguousarray(target_roi.crop(gray))
         self._anchor_ref = np.ascontiguousarray(anchor_roi.crop(gray))
+
+        target_ref_std = float(np.std(self._target_ref))
+        anchor_ref_std = float(np.std(self._anchor_ref))
+        if target_ref_std < self.min_texture_std:
+            raise ValueError(
+                f"Target ROI lacks visible texture in reference frame (std={target_ref_std:.2f} < {self.min_texture_std:.1f})"
+            )
+        if anchor_ref_std < self.min_texture_std:
+            raise ValueError(
+                f"Anchor ROI lacks visible texture in reference frame (std={anchor_ref_std:.2f} < {self.min_texture_std:.1f})"
+            )
+
         self._target_window = cv2.createHanningWindow(
             (target_roi.width, target_roi.height), cv2.CV_32F
         )
@@ -80,18 +99,108 @@ class PhaseCorrelationTracker:
         if not np.isfinite(timestamp_s):
             raise ValueError("timestamp_s must be finite")
 
-        target = _normalise_patch(self.target_roi.crop(gray))
-        anchor = _normalise_patch(self.anchor_roi.crop(gray))
+        target_crop = self.target_roi.crop(gray)
+        anchor_crop = self.anchor_roi.crop(gray)
 
-        # OpenCV returns the translation of src2 relative to src1. Fresh
-        # buffers are passed because the phase-correlation implementation
-        # applies its window to working image data; never expose references.
+        expected_target_shape = (self.target_roi.height, self.target_roi.width)
+        expected_anchor_shape = (self.anchor_roi.height, self.anchor_roi.width)
+        if target_crop.shape != expected_target_shape or anchor_crop.shape != expected_anchor_shape:
+            return MotionSample(
+                timestamp_s=float(timestamp_s),
+                target_dx_px=float("nan"),
+                target_dy_px=float("nan"),
+                anchor_dx_px=float("nan"),
+                anchor_dy_px=float("nan"),
+                relative_dx_px=float("nan"),
+                relative_dy_px=float("nan"),
+                target_response=0.0,
+                anchor_response=0.0,
+                valid=False,
+                rejection_reason="invalid_crop_dimensions",
+            )
+
+        target_finite = bool(np.all(np.isfinite(target_crop)))
+        anchor_finite = bool(np.all(np.isfinite(anchor_crop)))
+        if not (target_finite and anchor_finite):
+            reasons = []
+            if not target_finite:
+                reasons.append("target_non_finite")
+            if not anchor_finite:
+                reasons.append("anchor_non_finite")
+            return MotionSample(
+                timestamp_s=float(timestamp_s),
+                target_dx_px=float("nan"),
+                target_dy_px=float("nan"),
+                anchor_dx_px=float("nan"),
+                anchor_dy_px=float("nan"),
+                relative_dx_px=float("nan"),
+                relative_dy_px=float("nan"),
+                target_response=0.0,
+                anchor_response=0.0,
+                valid=False,
+                rejection_reason="; ".join(reasons),
+            )
+
+        target_std = float(np.std(target_crop))
+        anchor_std = float(np.std(anchor_crop))
+        target_tex_ok = target_std >= self.min_texture_std
+        anchor_tex_ok = anchor_std >= self.min_texture_std
+
+        if not (target_tex_ok and anchor_tex_ok):
+            reasons = []
+            if not target_tex_ok:
+                reasons.append(f"target_low_texture (std={target_std:.2f} < {self.min_texture_std:.2f})")
+            if not anchor_tex_ok:
+                reasons.append(f"anchor_low_texture (std={anchor_std:.2f} < {self.min_texture_std:.2f})")
+            return MotionSample(
+                timestamp_s=float(timestamp_s),
+                target_dx_px=float("nan"),
+                target_dy_px=float("nan"),
+                anchor_dx_px=float("nan"),
+                anchor_dy_px=float("nan"),
+                relative_dx_px=float("nan"),
+                relative_dy_px=float("nan"),
+                target_response=0.0,
+                anchor_response=0.0,
+                valid=False,
+                rejection_reason="; ".join(reasons),
+            )
+
+        target = _normalise_patch(target_crop)
+        anchor = _normalise_patch(anchor_crop)
+
         (target_dx, target_dy), target_response = cv2.phaseCorrelate(
             _normalise_patch(self._target_ref), target, self._target_window
         )
         (anchor_dx, anchor_dy), anchor_response = cv2.phaseCorrelate(
             _normalise_patch(self._anchor_ref), anchor, self._anchor_window
         )
+
+        target_resp = float(np.clip(target_response, 0.0, 1.0))
+        anchor_resp = float(np.clip(anchor_response, 0.0, 1.0))
+
+        target_resp_ok = target_resp >= self.min_response
+        anchor_resp_ok = anchor_resp >= self.min_response
+
+        if not (target_resp_ok and anchor_resp_ok):
+            reasons = []
+            if not target_resp_ok:
+                reasons.append(f"target_low_response (response={target_resp:.3f} < {self.min_response:.3f})")
+            if not anchor_resp_ok:
+                reasons.append(f"anchor_low_response (response={anchor_resp:.3f} < {self.min_response:.3f})")
+            return MotionSample(
+                timestamp_s=float(timestamp_s),
+                target_dx_px=float("nan"),
+                target_dy_px=float("nan"),
+                anchor_dx_px=float("nan"),
+                anchor_dy_px=float("nan"),
+                relative_dx_px=float("nan"),
+                relative_dy_px=float("nan"),
+                target_response=target_resp,
+                anchor_response=anchor_resp,
+                valid=False,
+                rejection_reason="; ".join(reasons),
+            )
 
         return MotionSample(
             timestamp_s=float(timestamp_s),
@@ -101,8 +210,10 @@ class PhaseCorrelationTracker:
             anchor_dy_px=float(anchor_dy),
             relative_dx_px=float(target_dx - anchor_dx),
             relative_dy_px=float(target_dy - anchor_dy),
-            target_response=float(np.clip(target_response, 0.0, 1.0)),
-            anchor_response=float(np.clip(anchor_response, 0.0, 1.0)),
+            target_response=target_resp,
+            anchor_response=anchor_resp,
+            valid=True,
+            rejection_reason=None,
         )
 
 

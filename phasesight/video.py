@@ -35,7 +35,10 @@ def analyse_video(
     min_frequency_hz: float = 0.5,
     max_frequency_hz: float | None = None,
     nperseg: int = 256,
+    allow_unstable_sampling: bool = False,
 ) -> dict:
+    from .capture import calculate_timestamp_stability
+
     video_path = Path(video_path)
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -53,18 +56,39 @@ def analyse_video(
     if not first_ok:
         cap.release()
         raise RuntimeError("Video contains no readable frames")
+
+    first_pts_msec = cap.get(cv2.CAP_PROP_POS_MSEC)
+    initial_pts_ok = (
+        first_pts_msec is not None
+        and np.isfinite(first_pts_msec)
+        and float(first_pts_msec) >= 0.0
+    )
+    first_pts_val = float(first_pts_msec) if initial_pts_ok else 0.0
+
     tracker = PhaseCorrelationTracker(first_frame, target_roi, anchor_roi)
     samples = []
+    pts_s: list[float] = []
+    backend_pts_reliable = initial_pts_ok
     index = 1
     try:
         while True:
             ok, frame = cap.read()
             if not ok:
                 break
-            # Use frame index / nominal FPS for this first prototype. Variable
-            # frame-rate sources should be converted to constant frame rate first.
-            timestamp_s = index / fps
-            samples.append(tracker.process(frame, timestamp_s))
+            pos_msec = cap.get(cv2.CAP_PROP_POS_MSEC)
+            if backend_pts_reliable and pos_msec is not None and np.isfinite(pos_msec):
+                t_s = (float(pos_msec) - first_pts_val) / 1000.0
+                prev_t = pts_s[-1] if pts_s else 0.0
+                if t_s <= prev_t and pos_msec == first_pts_val:
+                    # Container returns frozen / unadvancing timestamps (e.g. constant 0.0)
+                    backend_pts_reliable = False
+                    t_s = index / fps
+            else:
+                t_s = index / fps
+
+            pts_s.append(t_s)
+            sample = tracker.process(frame, t_s)
+            samples.append(sample)
             index += 1
     finally:
         cap.release()
@@ -72,7 +96,31 @@ def analyse_video(
     if len(samples) < 32:
         raise RuntimeError("Video is too short: need at least 33 frames")
 
-    timestamps = np.asarray([s.timestamp_s for s in samples], dtype=np.float64)
+    # If backend PTS degraded or was frozen, fall back to nominal CFR timestamps
+    if not backend_pts_reliable:
+        pts_s = [i / fps for i in range(1, len(samples) + 1)]
+        timestamp_source = "inferred_cfr_fallback"
+    else:
+        timestamp_source = "container_pts"
+
+    # Reject tracking failure frames explicitly
+    invalid_samples = [s for s in samples if not s.valid]
+    if invalid_samples:
+        raise RuntimeError(
+            f"Tracking quality gate failed: {len(invalid_samples)} / {len(samples)} frames rejected "
+            f"({invalid_samples[0].rejection_reason}). Cannot perform vibration analysis with invalid tracking samples."
+        )
+
+    timestamps = np.asarray(pts_s, dtype=np.float64)
+
+    # Validate temporal sampling stability
+    stability = calculate_timestamp_stability(timestamps, nominal_fps=fps)
+    if stability.status == "REJECTED_UNSTABLE" and not allow_unstable_sampling:
+        raise RuntimeError(
+            f"Video temporal sampling is rejected as unstable ({stability.status}): "
+            f"{'; '.join(stability.status_reasons)}"
+        )
+
     dx = np.asarray([s.relative_dx_px for s in samples], dtype=np.float64)
     dy = np.asarray([s.relative_dy_px for s in samples], dtype=np.float64)
     x_result = analyse_displacement(
@@ -104,12 +152,14 @@ def analyse_video(
         writer.writerow([
             "timestamp_s", "target_dx_px", "target_dy_px", "anchor_dx_px", "anchor_dy_px",
             "relative_dx_px", "relative_dy_px", "target_response", "anchor_response",
+            "valid", "rejection_reason",
         ])
         for sample in samples:
             writer.writerow([
                 sample.timestamp_s, sample.target_dx_px, sample.target_dy_px,
                 sample.anchor_dx_px, sample.anchor_dy_px, sample.relative_dx_px,
                 sample.relative_dy_px, sample.target_response, sample.anchor_response,
+                sample.valid, sample.rejection_reason or "",
             ])
 
     fig, axes = plt.subplots(2, 1, figsize=(10, 7), constrained_layout=True)
@@ -139,6 +189,8 @@ def analyse_video(
         "fps_used": fps,
         "frames_analysed": len(samples) + 1,
         "duration_s": float(timestamps[-1] - timestamps[0]),
+        "timestamp_source": timestamp_source,
+        "temporal_stability": stability.to_dict(),
         "target_roi_xywh": asdict(target_roi),
         "anchor_roi_xywh": asdict(anchor_roi),
         "x_axis": {

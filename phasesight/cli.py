@@ -284,8 +284,11 @@ def main() -> None:
 
     if args.command == "ui":
         import subprocess
+        import sys
         app_path = Path(__file__).parent / "app.py"
         cmd = [
+            sys.executable,
+            "-m",
             "streamlit",
             "run",
             str(app_path),

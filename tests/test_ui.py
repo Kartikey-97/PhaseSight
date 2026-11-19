@@ -413,3 +413,38 @@ def test_ui_live_webcam_rejected_unstable_blocks_analysis():
     assert run_btn.disabled is True
 
 
+# ==============================================================================
+# Task 4: Streamlit CLI Launcher Regression Test
+# ==============================================================================
+
+def test_cli_ui_launcher_uses_sys_executable_with_sanitized_path(monkeypatch):
+    """Verify phasesight ui launches using sys.executable even when .venv/bin is absent from PATH."""
+    import os
+    import sys
+    import subprocess
+    from phasesight.cli import main
+
+    captured_cmd = []
+
+    def mock_run(cmd, check=True):
+        captured_cmd.extend(cmd)
+
+    monkeypatch.setattr(subprocess, "run", mock_run)
+
+    # Scrub .venv from PATH
+    env_path = os.environ.get("PATH", "")
+    sanitized_path = ":".join(p for p in env_path.split(":") if ".venv" not in p)
+    monkeypatch.setenv("PATH", sanitized_path)
+
+    monkeypatch.setattr("sys.argv", ["phasesight", "ui", "--port", "8599", "--host", "127.0.0.1"])
+    main()
+
+    assert len(captured_cmd) >= 5
+    assert captured_cmd[0] == sys.executable
+    assert captured_cmd[1:3] == ["-m", "streamlit"]
+    assert captured_cmd[3] == "run"
+    assert any("--server.port=8599" in arg for arg in captured_cmd)
+    assert any("--server.address=127.0.0.1" in arg for arg in captured_cmd)
+
+
+
