@@ -26,6 +26,13 @@ from phasesight.baseline import (
     evaluate_run_against_baseline,
     serialize_baseline,
 )
+from phasesight.capture import (
+    CaptureResult,
+    CaptureStabilityReport,
+    capture_live_clip,
+    grab_preview_frame,
+    open_capture_source,
+)
 from phasesight.storage import (
     AssetRecord,
     InspectionRunRecord,
@@ -42,6 +49,7 @@ from phasesight.ui_helpers import (
     plot_run_arrays,
     read_first_frame,
     run_arrays_from_csv,
+    stability_badge,
     status_badge,
     sync_active_asset_rois,
 )
@@ -206,15 +214,17 @@ def render_inspection_tab(sm: StorageManager, active_asset: AssetRecord | None) 
             f"ROIs and Expected FPS ({active_asset.expected_fps:.1f}) loaded from asset record."
         )
 
-    col_source1, col_source2 = st.columns(2)
+    col_source1, col_source2 = st.columns([1, 2])
     with col_source1:
         source_mode = st.radio(
             "Select video input source:",
-            ["Sample portable clips", "Upload video file"],
-            horizontal=True,
+            ["Sample portable clips", "Upload video file", "Live Webcam Stream"],
+            horizontal=False,
         )
 
     video_path: Path | None = None
+    live_stability: CaptureStabilityReport | None = None
+
     if source_mode == "Sample portable clips":
         with col_source2:
             sample_choice = st.selectbox("Choose sample clip:", list(SAMPLE_VIDEOS.keys()))
@@ -224,7 +234,7 @@ def render_inspection_tab(sm: StorageManager, active_asset: AssetRecord | None) 
                     video_path = chosen_path
                 else:
                     st.error(f"Sample file not found at: {chosen_path}")
-    else:
+    elif source_mode == "Upload video file":
         with col_source2:
             uploaded_file = st.file_uploader(
                 "Upload video (MP4, AVI, MOV):",
@@ -237,22 +247,139 @@ def render_inspection_tab(sm: StorageManager, active_asset: AssetRecord | None) 
                 saved_path = upload_dir / clean_name
                 saved_path.write_bytes(uploaded_file.getbuffer())
                 video_path = saved_path
+    else:  # Live Webcam Stream
+        with col_source2:
+            st.markdown("#### Live Camera & Acquisition Controls")
+            col_wc1, col_wc2, col_wc3 = st.columns(3)
+            with col_wc1:
+                cam_source = st.text_input(
+                    "Camera Index / Source:",
+                    value="0",
+                    help="Camera integer index (e.g. 0, 1), device string, or 'mock:0' for virtual test stream.",
+                    key="webcam_source_val",
+                )
+            with col_wc2:
+                cam_duration = st.slider(
+                    "Duration (seconds):",
+                    min_value=2.0,
+                    max_value=20.0,
+                    value=5.0,
+                    step=0.5,
+                    key="webcam_duration_val",
+                )
+            with col_wc3:
+                cam_fps = st.selectbox(
+                    "Target FPS:",
+                    [30.0, 60.0, 15.0],
+                    index=0,
+                    key="webcam_fps_val",
+                )
 
-    if video_path is None:
-        st.info("Select or upload a video file to proceed.")
-        return
+            col_btn_prev, col_btn_rec = st.columns(2)
+            with col_btn_prev:
+                if st.button("📸 Grab Preview Frame", key="btn_grab_preview"):
+                    try:
+                        p_frame = grab_preview_frame(cam_source)
+                        st.session_state["webcam_preview_frame"] = p_frame
+                        st.session_state["webcam_preview_source"] = cam_source
+                        st.success("Preview frame acquired.")
+                    except Exception as exc:
+                        st.error(f"Failed to grab preview: {exc}")
 
-    # Video metadata and first frame
-    try:
-        meta = get_video_metadata(video_path)
-        first_frame = read_first_frame(video_path)
-    except Exception as exc:
-        st.error(f"Failed to load video: {exc}")
+            with col_btn_rec:
+                if st.button("🔴 Record Live Capture", type="primary", key="btn_record_live"):
+                    prog = st.progress(0.0)
+                    stat_txt = st.empty()
+
+                    def _cb(pct: float) -> None:
+                        prog.progress(pct)
+                        stat_txt.text(f"Acquiring live frames... {pct * 100:.0f}%")
+
+                    import datetime
+
+                    now_str = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                    out_dir = Path("output/webcam_captures")
+                    out_dir.mkdir(parents=True, exist_ok=True)
+                    target_mp4 = out_dir / f"webcam_{now_str}.mp4"
+
+                    try:
+                        res = capture_live_clip(
+                            source=cam_source,
+                            duration_s=float(cam_duration),
+                            target_fps=float(cam_fps),
+                            output_path=target_mp4,
+                            progress_callback=_cb,
+                        )
+                        st.session_state["webcam_capture_result"] = res
+                        st.session_state["webcam_capture_path"] = res.video_path
+                        if res.stability.measured_fps > 0:
+                            st.session_state["fps_override_val"] = float(round(res.stability.measured_fps, 2))
+                        st.success(f"Capture completed: {len(res.frames)} frames saved.")
+                    except Exception as exc:
+                        st.error(f"Live capture failed: {exc}")
+
+            if "webcam_capture_result" in st.session_state:
+                res = st.session_state["webcam_capture_result"]
+                video_path = st.session_state.get("webcam_capture_path")
+                live_stability = res.stability
+
+    # Frame-Rate Stability Card (CAP-03, CAP-04, CAP-05)
+    if live_stability is not None:
+        st.markdown("---")
+        st.markdown("### ⏱️ Frame-Rate Stability Card")
+        col_st1, col_st2, col_st3, col_st4 = st.columns(4)
+        with col_st1:
+            st.markdown(f"**Timing Status:** {stability_badge(live_stability.status)}")
+        with col_st2:
+            st.metric("Measured FPS", f"{live_stability.measured_fps:.2f} Hz", help="Empirical 1/median(dt)")
+        with col_st3:
+            st.metric("Timing Jitter", f"{live_stability.jitter_ratio * 100:.2f}%", help="std(dt) / median(dt)")
+        with col_st4:
+            st.metric("Dropped Frames", f"{live_stability.dropped_frames_count}", help="Intervals > 1.5x median")
+
+        if live_stability.status == "REJECTED_UNSTABLE":
+            st.error(
+                "❌ **Acquisition Unstable:** Frame-rate timing irregular. "
+                "Webcam auto-exposure throttling, high CPU load, or USB bandwidth saturation detected. "
+                "Measurement is blocked to prevent false vibration peaks."
+            )
+            for r in live_stability.status_reasons:
+                st.write(f"- {r}")
+        elif live_stability.status == "WARNING_JITTER":
+            st.warning("⚠️ **Moderate Jitter:** Small timing jitter or dropped frames detected. Analysis permitted with caution.")
+            for r in live_stability.status_reasons:
+                st.write(f"- {r}")
+        else:
+            st.success("✅ **Stable Acquisition:** High-regularity frame arrival verified. Ready for spectral analysis.")
+
+    # Determine first frame for ROI configuration
+    first_frame = None
+    if video_path is not None and Path(video_path).exists():
+        try:
+            meta = get_video_metadata(video_path)
+            first_frame = read_first_frame(video_path)
+        except Exception as exc:
+            st.error(f"Failed to load video: {exc}")
+            return
+    elif source_mode == "Live Webcam Stream" and "webcam_preview_frame" in st.session_state:
+        first_frame = st.session_state["webcam_preview_frame"]
+        meta = {
+            "fps": float(st.session_state.get("webcam_fps_val", 30.0)),
+            "frame_count": 1,
+            "duration_s": 0.0,
+        }
+
+    if first_frame is None:
+        if source_mode == "Live Webcam Stream":
+            st.info("💡 Click **'📸 Grab Preview Frame'** to inspect live camera view and configure ROIs, or **'🔴 Record Live Capture'** to acquire a clip.")
+        else:
+            st.info("Select or upload a video file to proceed.")
         return
 
     frame_h, frame_w = first_frame.shape[:2]
+    file_display = video_path.name if video_path is not None else "Live Preview Frame"
     st.write(
-        f"**File:** `{video_path.name}` | **Dimensions:** {frame_w}x{frame_h} px | "
+        f"**File / Stream:** `{file_display}` | **Dimensions:** {frame_w}x{frame_h} px | "
         f"**FPS:** {meta['fps']:.2f} | **Frames:** {meta['frame_count']} "
         f"({meta['duration_s']:.2f} s)"
     )
@@ -347,7 +474,13 @@ def render_inspection_tab(sm: StorageManager, active_asset: AssetRecord | None) 
     fps_override = float(fps_override_val) if fps_override_val > 0 else None
 
     # Run Analysis Button
-    run_disabled = bool(roi_errors)
+    run_disabled = (
+        bool(roi_errors)
+        or video_path is None
+        or (live_stability is not None and live_stability.status == "REJECTED_UNSTABLE")
+    )
+    if video_path is None and source_mode == "Live Webcam Stream":
+        st.info("💡 Configure ROIs on the preview frame, then click **'🔴 Record Live Capture'** above to acquire a clip for vibration analysis.")
     if st.button("Run Vibration Analysis", type="primary", disabled=run_disabled):
         output_dir = Path("output") / video_path.stem
         with st.spinner("Processing video frames and computing Welch PSD..."):

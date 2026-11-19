@@ -33,13 +33,13 @@
   - [x] `05-01-PLAN.md` — Workbench history, asset management, baseline wizard, inspection history with NPZ trace exploration, review event logging, and headless UI testing
 - **Exit Check:** 12 tests in `tests/test_ui.py` (63/63 tests passing across codebase), operator can create assets, record baselines, inspect new videos, and view comparison logs.
 
-### Phase 6: Live Webcam Stream & Dropped Frame Handling (CURRENT MILESTONE)
-- **Status:** IN PROGRESS 🚀
-- **Deliverables:** Support `camera_id` in video capture, fixed-duration live buffer, dropped frame and timestamp regularity verification.
+### Phase 6: Live Webcam Stream & Dropped Frame Handling
+- **Status:** COMPLETED ✅
+- **Deliverables:** `phasesight/capture.py`, monotonic time acquisition, empirical FPS $f_s = 1.0 / \text{median}(\Delta t)$, robust timing jitter $\text{std}(\Delta t) / \text{median}(\Delta t)$, dropped frame counting, status classification (`STABLE`, `WARNING_JITTER`, `REJECTED_UNSTABLE`), `MockVideoCapture` virtual streams, CLI `capture` command, and Streamlit Workbench Tab 1 live capture interface with stability card and analysis gate.
 - **Plans:** 1 plan (`06-PLAN.md` / `06-01-PLAN.md`)
-  - [ ] `06-01-PLAN.md` — Live webcam capture engine, dropped frame & jitter stability quantification, CLI capture command, and Streamlit operator workbench integration
-- **Exit Check:** Live webcam preview and capture with constant-frame-rate verification.
+  - [x] `06-01-PLAN.md` — Live webcam capture engine, dropped frame & jitter stability quantification, CLI capture command, and Streamlit operator workbench integration
+- **Exit Check:** 13 unit tests in `tests/test_capture.py` and 15 tests in `tests/test_ui.py` (79/79 passing across codebase), live webcam preview and capture with constant-frame-rate verification and gating.
 
-### Phase 7: Final Validation & Demonstration Package
-- **Status:** PLANNED
+### Phase 7: Final Validation & Demonstration Package (CURRENT MILESTONE)
+- **Status:** IN PROGRESS 🚀
 - **Deliverables:** Synthetic test matrix T1–T6 verification, benchmark dataset evaluation, screenshots, user guide, and demo walkthrough.

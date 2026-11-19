@@ -11,6 +11,7 @@ from .baseline import (
     evaluate_run_against_baseline,
     serialize_baseline,
 )
+from .capture import calculate_timestamp_stability, capture_live_clip
 from .storage import StorageManager
 from .synthetic import SyntheticConfig, make_scene, write_video
 from .validation import run_validation_suite
@@ -103,6 +104,14 @@ def _build_parser() -> argparse.ArgumentParser:
     asset_show.add_argument("asset_id", help="Asset identifier")
     asset_show.add_argument("--storage-root", type=Path, default=None, help="Custom storage root directory")
     asset_show.add_argument("--json", action="store_true", help="Output raw JSON details")
+
+    cap_parser = sub.add_parser("capture", help="Acquire a video clip from camera or virtual stream with timing checks")
+    cap_parser.add_argument("source", nargs="?", default="0", help="Camera index (e.g. 0), video file path, or 'mock:0'")
+    cap_parser.add_argument("--duration", type=float, default=5.0, help="Capture duration in seconds (1.0 to 30.0)")
+    cap_parser.add_argument("--fps", type=float, default=30.0, help="Target frame rate (default: 30)")
+    cap_parser.add_argument("--out", type=Path, default=None, help="Output MP4 file path")
+    cap_parser.add_argument("--json", type=Path, default=None, help="Output JSON path for stability report")
+    cap_parser.add_argument("--warmup", type=int, default=2, help="Warmup frames to flush buffer")
 
     return parser
 
@@ -362,6 +371,55 @@ def main() -> None:
                     print(f"==========================================================\n")
         finally:
             sm.close()
+        return
+
+    if args.command == "capture":
+        if args.duration < 1.0 or args.duration > 30.0:
+            print(f"Error: duration must be between 1.0 and 30.0 seconds (got {args.duration}).")
+            return
+
+        import datetime
+
+        out_path = args.out
+        if out_path is None:
+            now_str = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            out_path = Path("output/webcam_captures") / f"capture_{now_str}.mp4"
+
+        print(f"Acquiring {args.duration:.1f}s from source '{args.source}' (Target FPS: {args.fps:.1f})...")
+        res = capture_live_clip(
+            source=args.source,
+            duration_s=float(args.duration),
+            target_fps=float(args.fps),
+            output_path=out_path,
+        )
+
+        rep = res.stability
+        badge = (
+            "[🟢 STABLE]"
+            if rep.status == "STABLE"
+            else ("[🟡 WARNING_JITTER]" if rep.status == "WARNING_JITTER" else "[🔴 REJECTED_UNSTABLE]")
+        )
+
+        print("\n================ LIVE CAPTURE STABILITY REPORT ================")
+        print(f"Status:          {badge} ({rep.status})")
+        print(f"Video File:      {res.video_path}")
+        print(f"Frames Captured: {rep.total_frames} frames in {rep.duration_s:.2f} s")
+        print(f"Nominal FPS:     {rep.nominal_fps:.2f} FPS")
+        print(f"Measured FPS:    {rep.measured_fps:.2f} FPS (empirical 1/median_dt)")
+        print(f"Jitter Ratio:    {rep.jitter_ratio * 100:.2f}% (std/median)")
+        print(f"Robust Jitter:   {rep.robust_jitter_ratio * 100:.2f}% (1.4826*MAD/median)")
+        print(f"Dropped Frames:  {rep.dropped_frames_count} frames missing")
+        print(f"Large Gaps:      {rep.large_gap_count} stalls (> 2.5x median dt)")
+        if rep.status_reasons:
+            print("Status Details:")
+            for reason in rep.status_reasons:
+                print(f"  - {reason}")
+        print("===============================================================\n")
+
+        if args.json:
+            args.json.parent.mkdir(parents=True, exist_ok=True)
+            args.json.write_text(json.dumps(rep.to_dict(), indent=2), encoding="utf-8")
+            print(f"Saved stability report to: {args.json}")
         return
 
 

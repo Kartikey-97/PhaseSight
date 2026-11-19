@@ -81,6 +81,18 @@ def status_badge(status: str) -> str:
     return f"⚪ {status}"
 
 
+def stability_badge(status: str) -> str:
+    """Return colored stability status badge markdown string."""
+    s = status.strip()
+    if s == "STABLE":
+        return "🟢 STABLE"
+    elif s == "WARNING_JITTER":
+        return "🟡 WARNING_JITTER"
+    elif s == "REJECTED_UNSTABLE":
+        return "🔴 REJECTED_UNSTABLE"
+    return f"⚪ {status}"
+
+
 def sync_active_asset_rois(asset: Any | None) -> None:
     """Synchronize session state ROI coordinates and FPS from the active asset."""
     import streamlit as st

@@ -1,7 +1,7 @@
 # PhaseSight Project State
 
 ## Active Milestone
-**Phase 6: Live Webcam Stream & Dropped Frame Handling**
+**Phase 7: Final Validation & Demonstration Package**
 
 ## Completed Milestones
 - Phase 1: Core Signal & Tracking Pipeline (COMPLETED ✅)
@@ -9,13 +9,12 @@
 - Phase 3: Statistical Baseline Engine (COMPLETED ✅)
 - Phase 4: Local Persistence Layer (COMPLETED ✅)
 - Phase 5: Workbench History & Asset Integration (COMPLETED ✅)
-  - Integrated `StorageManager` session caching in `phasesight/app.py`.
-  - Global Sidebar Asset Anchor: asset selector, details card, and storage diagnostics.
-  - Tab 1: Active asset ROI/FPS synchronization without widget collision warnings, 1-click Auto-Assessment card against stored baseline, and 'Save Run to Asset History' persisting `InspectionRunRecord` and compressed NPZ `RunArrays`.
-  - Tab 2: Asset Management (directory catalog, registration form with 'Copy ROIs from inspection' shortcut, parameter editor, and cascading deletion).
-  - Tab 3: Baseline Recording Wizard (quorum $N \ge 3$, spatial ROI consistency $\pm 2$ px, sampling rate consistency $\pm 2\%$, Median + MAD preview, commit to SQLite).
-  - Tab 4: Inspection History (filterable run log with status badges, on-demand NPZ array exploration with 2-panel engineering plots, operator review event logging form, and review audit trail).
-  - 12 comprehensive unit tests in `tests/test_ui.py` (63/63 tests passing across entire codebase).
+- Phase 6: Live Webcam Stream & Dropped Frame Handling (COMPLETED ✅)
+  - `phasesight/capture.py`: monotonic wall-clock timing (`time.perf_counter()`), empirical FPS $f_s = 1.0 / \text{median}(\Delta t)$, robust timing jitter $\text{std}(\Delta t) / \text{median}(\Delta t)$, integer dropped frames detection ($> 1.5 \times \text{median}(\Delta t)$), large gaps ($> 2.5 \times \text{median}(\Delta t)$), and stability classification (`STABLE`, `WARNING_JITTER`, `REJECTED_UNSTABLE`).
+  - `MockVideoCapture`: virtual webcam streams for deterministic offline CI/CD without hardware requirements.
+  - CLI `phasesight capture <source> --duration <s> --target-fps <fps> --out <path>`.
+  - Streamlit Workbench Tab 1: Live Webcam Stream acquisition UI with live preview grab, progress bar recording, Frame-Rate Stability Card, and automated `REJECTED_UNSTABLE` analysis gate.
+  - 13 unit tests in `tests/test_capture.py` and 3 new live tests in `tests/test_ui.py` (total 79/79 passing across entire repository).
 
 ## Next Up
-Phase 6: Live Webcam Stream & Dropped Frame Handling (Support `camera_id` in video capture, fixed-duration live buffer, dropped frame and timestamp regularity verification).
+Phase 7: Final Validation & Demonstration Package (Synthetic test matrix T1–T6 verification from Proposal Page 5, benchmark data report, demonstration walkthrough, updated README and submission package).

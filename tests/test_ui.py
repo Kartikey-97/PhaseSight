@@ -16,6 +16,7 @@ from phasesight.ui_helpers import (
     plot_run_arrays,
     read_first_frame,
     run_arrays_from_csv,
+    stability_badge,
     status_badge,
 )
 
@@ -320,3 +321,95 @@ def test_ui_auto_assessment_against_stored_baseline():
     assert evaluation.status == "Review"
     assert evaluation.deviations["x_rms_displacement_px"].is_trigger is True
     assert any("RMS" in t for t in evaluation.trigger_features)
+
+
+def test_stability_badge_formatting():
+    assert "🟢" in stability_badge("STABLE")
+    assert "🟡" in stability_badge("WARNING_JITTER")
+    assert "🔴" in stability_badge("REJECTED_UNSTABLE")
+    assert "⚪" in stability_badge("UNKNOWN")
+
+
+def test_ui_live_webcam_mode_preview_and_record():
+    at = AppTest.from_file(str(APP_PATH), default_timeout=30)
+    at.run()
+    assert not at.exception
+
+    # Select "Live Webcam Stream" mode
+    source_radio = at.radio[0]
+    assert "Live Webcam Stream" in source_radio.options
+    source_radio.set_value("Live Webcam Stream").run()
+    assert not at.exception
+
+    # Verify camera inputs rendered
+    cam_inputs = [ti for ti in at.text_input if ti.key == "webcam_source_val"]
+    assert len(cam_inputs) == 1
+    cam_inputs[0].set_value("mock:0").run()
+    assert not at.exception
+
+    # Click grab preview button
+    grab_buttons = [b for b in at.button if b.key == "btn_grab_preview"]
+    assert len(grab_buttons) == 1
+    grab_buttons[0].click().run()
+    assert not at.exception
+    assert "webcam_preview_frame" in at.session_state
+    assert at.session_state["webcam_preview_frame"] is not None
+
+    # Test record live capture with mock stream (duration 2.0s)
+    slider = [s for s in at.slider if s.key == "webcam_duration_val"][0]
+    slider.set_value(2.0).run()
+
+    record_buttons = [b for b in at.button if b.key == "btn_record_live"]
+    assert len(record_buttons) == 1
+    record_buttons[0].click().run()
+    assert not at.exception
+
+    assert "webcam_capture_result" in at.session_state
+    cap_res = at.session_state["webcam_capture_result"]
+    assert cap_res.stability.status in ("STABLE", "WARNING_JITTER")
+    assert Path(cap_res.video_path).is_file()
+
+
+def test_ui_live_webcam_rejected_unstable_blocks_analysis():
+    from phasesight.capture import CaptureResult, CaptureStabilityReport
+
+    at = AppTest.from_file(str(APP_PATH), default_timeout=30)
+    unstable_rep = CaptureStabilityReport(
+        total_frames=100,
+        duration_s=5.0,
+        nominal_fps=30.0,
+        measured_fps=20.0,
+        median_dt_s=0.05,
+        mean_dt_s=0.05,
+        std_dt_s=0.015,
+        min_dt_s=0.02,
+        max_dt_s=0.35,
+        jitter_ratio=0.15,
+        robust_jitter_ratio=0.12,
+        dropped_frames_count=10,
+        dropped_frame_indices=[10, 25, 40],
+        large_gap_count=2,
+        status="REJECTED_UNSTABLE",
+        status_reasons=["Timing jitter ratio 15.00% exceeds 5.0% threshold."],
+    )
+    unstable_res = CaptureResult(
+        video_path=Path("data/portable/baseline.mp4"),
+        timestamps_s=np.linspace(0, 5, 100),
+        frames=[np.zeros((10, 10, 3), dtype=np.uint8)],
+        stability=unstable_rep,
+    )
+    at.session_state["webcam_capture_result"] = unstable_res
+    at.session_state["webcam_capture_path"] = Path("data/portable/baseline.mp4")
+
+    # Select live mode
+    at.run()
+    source_radio = at.radio[0]
+    source_radio.set_value("Live Webcam Stream").run()
+    assert not at.exception
+
+    # Find "Run Vibration Analysis" button
+    run_btn = next((b for b in at.button if b.label == "Run Vibration Analysis"), None)
+    assert run_btn is not None
+    assert run_btn.disabled is True
+
+
