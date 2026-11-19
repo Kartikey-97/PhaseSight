@@ -26,15 +26,15 @@
   - [x] `04-01-PLAN.md` — Local persistence layer, SQLite schema, NPZ array storage, CRUD operations, test suite, and CLI
 - **Exit Check:** 15 unit tests in `tests/test_storage.py` (55/55 tests passing across codebase), foreign key cascades verified, and CLI storage commands verified.
 
-### Phase 5: Workbench History & Asset Integration (CURRENT MILESTONE)
-- **Status:** IN PROGRESS 🚀
+### Phase 5: Workbench History & Asset Integration
+- **Status:** COMPLETED ✅
 - **Deliverables:** Streamlit UI tabs for Asset Management, Baseline Recording Wizard, and Inspection Run History with status badges and notes.
 - **Plans:** 1 plan (`05-PLAN.md` / `05-01-PLAN.md`)
-  - [ ] `05-01-PLAN.md` — Workbench history, asset management, baseline wizard, inspection history with NPZ trace exploration, review event logging, and headless UI testing
-- **Exit Check:** Operator can create an asset, record 3 baselines, inspect a new video, and view the comparison log.
+  - [x] `05-01-PLAN.md` — Workbench history, asset management, baseline wizard, inspection history with NPZ trace exploration, review event logging, and headless UI testing
+- **Exit Check:** 12 tests in `tests/test_ui.py` (63/63 tests passing across codebase), operator can create assets, record baselines, inspect new videos, and view comparison logs.
 
-### Phase 6: Live Webcam Stream & Dropped Frame Handling
-- **Status:** PLANNED
+### Phase 6: Live Webcam Stream & Dropped Frame Handling (CURRENT MILESTONE)
+- **Status:** IN PROGRESS 🚀
 - **Deliverables:** Support `camera_id` in video capture, fixed-duration live buffer, dropped frame and timestamp regularity verification.
 - **Exit Check:** Live webcam preview and capture with constant-frame-rate verification.
 
