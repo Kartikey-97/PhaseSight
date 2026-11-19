@@ -43,3 +43,6 @@
 ### Phase 7: Final Validation & Demonstration Package (CURRENT MILESTONE)
 - **Status:** IN PROGRESS 🚀
 - **Deliverables:** Synthetic test matrix T1–T6 verification, benchmark dataset evaluation, screenshots, user guide, and demo walkthrough.
+- **Plans:** 1 plan (`07-PLAN.md` / `07-01-PLAN.md`)
+  - [ ] `07-01-PLAN.md` — Proposal Page 5 validation matrix (T1–T6), CLI validate extension, DEMO_GUIDE.md 8-stage walkthrough, and documentation hardening (README.md, TEST_REPORT.md)
+- **Exit Check:** 85+ passing tests in pytest across all 9 modules, 6/6 proposal validation protocols passing with verified numerical criteria, CLI validate outputting structured table and JSON, DEMO_GUIDE.md walkthrough ready for evaluators, and hardened README.md and TEST_REPORT.md.
