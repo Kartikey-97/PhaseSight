@@ -13,7 +13,9 @@ dependencies = [
   "scipy>=1.12",
   "opencv-python>=4.9",
   "matplotlib>=3.8",
-  "streamlit>=1.30",
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.30",
+  "python-multipart>=0.0.9",
 ]
 
 [project.optional-dependencies]

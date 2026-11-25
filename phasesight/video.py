@@ -37,7 +37,7 @@ def analyse_video(
     nperseg: int = 256,
     allow_unstable_sampling: bool = False,
 ) -> dict:
-    from .capture import calculate_timestamp_stability
+    from .capture import CaptureStabilityReport, calculate_timestamp_stability
 
     video_path = Path(video_path)
     output_dir = Path(output_dir)
@@ -46,11 +46,28 @@ def analyse_video(
     if not cap.isOpened():
         raise RuntimeError(f"Could not open video: {video_path}")
 
-    fps_meta = float(cap.get(cv2.CAP_PROP_FPS) or 0.0)
-    fps = float(fps_override or fps_meta)
-    if not np.isfinite(fps) or fps <= 0 or fps > 1000:
-        cap.release()
-        raise ValueError("Could not determine a valid FPS; pass --fps explicitly")
+    if fps_override is not None:
+        try:
+            fps_val = float(fps_override)
+        except (TypeError, ValueError):
+            cap.release()
+            raise ValueError(
+                f"Invalid explicit FPS override: {fps_override}. Must be a finite positive number."
+            )
+        if not np.isfinite(fps_val) or fps_val <= 0:
+            cap.release()
+            raise ValueError(
+                f"Invalid explicit FPS override: {fps_override}. Must be a finite positive number."
+            )
+        fps = fps_val
+        is_override = True
+    else:
+        fps_meta = float(cap.get(cv2.CAP_PROP_FPS) or 0.0)
+        fps = fps_meta
+        if not np.isfinite(fps) or fps <= 0 or fps > 1000:
+            cap.release()
+            raise ValueError("Could not determine a valid FPS; pass --fps explicitly")
+        is_override = False
 
     first_ok, first_frame = cap.read()
     if not first_ok:
@@ -68,23 +85,26 @@ def analyse_video(
     tracker = PhaseCorrelationTracker(first_frame, target_roi, anchor_roi)
     samples = []
     pts_s: list[float] = []
-    backend_pts_reliable = initial_pts_ok
+    backend_pts_reliable = initial_pts_ok and not is_override
     index = 1
     try:
         while True:
             ok, frame = cap.read()
             if not ok:
                 break
-            pos_msec = cap.get(cv2.CAP_PROP_POS_MSEC)
-            if backend_pts_reliable and pos_msec is not None and np.isfinite(pos_msec):
-                t_s = (float(pos_msec) - first_pts_val) / 1000.0
-                prev_t = pts_s[-1] if pts_s else 0.0
-                if t_s <= prev_t and pos_msec == first_pts_val:
-                    # Container returns frozen / unadvancing timestamps (e.g. constant 0.0)
-                    backend_pts_reliable = False
-                    t_s = index / fps
-            else:
+            if is_override:
                 t_s = index / fps
+            else:
+                pos_msec = cap.get(cv2.CAP_PROP_POS_MSEC)
+                if backend_pts_reliable and pos_msec is not None and np.isfinite(pos_msec):
+                    t_s = (float(pos_msec) - first_pts_val) / 1000.0
+                    prev_t = pts_s[-1] if pts_s else 0.0
+                    if t_s <= prev_t and pos_msec == first_pts_val:
+                        # Container returns frozen / unadvancing timestamps (e.g. constant 0.0)
+                        backend_pts_reliable = False
+                        t_s = index / fps
+                else:
+                    t_s = index / fps
 
             pts_s.append(t_s)
             sample = tracker.process(frame, t_s)
@@ -96,8 +116,11 @@ def analyse_video(
     if len(samples) < 32:
         raise RuntimeError("Video is too short: need at least 33 frames")
 
-    # If backend PTS degraded or was frozen, fall back to nominal CFR timestamps
-    if not backend_pts_reliable:
+    if is_override:
+        pts_s = [i / fps for i in range(1, len(samples) + 1)]
+        timestamp_source = "explicit_fps_override"
+    elif not backend_pts_reliable:
+        # If backend PTS degraded or was frozen, fall back to nominal CFR timestamps
         pts_s = [i / fps for i in range(1, len(samples) + 1)]
         timestamp_source = "inferred_cfr_fallback"
     else:
@@ -114,12 +137,35 @@ def analyse_video(
     timestamps = np.asarray(pts_s, dtype=np.float64)
 
     # Validate temporal sampling stability
-    stability = calculate_timestamp_stability(timestamps, nominal_fps=fps)
-    if stability.status == "REJECTED_UNSTABLE" and not allow_unstable_sampling:
-        raise RuntimeError(
-            f"Video temporal sampling is rejected as unstable ({stability.status}): "
-            f"{'; '.join(stability.status_reasons)}"
+    if is_override:
+        stability = CaptureStabilityReport(
+            total_frames=len(timestamps),
+            duration_s=float(timestamps[-1] - timestamps[0]) if len(timestamps) > 1 else 0.0,
+            nominal_fps=float(fps),
+            measured_fps=float(fps),
+            median_dt_s=float(1.0 / fps),
+            mean_dt_s=float(1.0 / fps),
+            std_dt_s=float("nan"),
+            min_dt_s=float(1.0 / fps),
+            max_dt_s=float(1.0 / fps),
+            jitter_ratio=float("nan"),
+            robust_jitter_ratio=float("nan"),
+            dropped_frames_count=None,
+            dropped_frame_indices=[],
+            large_gap_count=0,
+            status="ASSUMED_UNIFORM",
+            status_reasons=[
+                "Timestamps were synthesized from an explicit FPS override. "
+                "Physical capture timing, dropped frames, and exposure jitter were not independently verified."
+            ],
         )
+    else:
+        stability = calculate_timestamp_stability(timestamps, nominal_fps=fps)
+        if stability.status == "REJECTED_UNSTABLE" and not allow_unstable_sampling:
+            raise RuntimeError(
+                f"Video temporal sampling is rejected as unstable ({stability.status}): "
+                f"{'; '.join(stability.status_reasons)}"
+            )
 
     dx = np.asarray([s.relative_dx_px for s in samples], dtype=np.float64)
     dy = np.asarray([s.relative_dy_px for s in samples], dtype=np.float64)
@@ -190,6 +236,7 @@ def analyse_video(
         "frames_analysed": len(samples) + 1,
         "duration_s": float(timestamps[-1] - timestamps[0]),
         "timestamp_source": timestamp_source,
+        "timebase_source": timestamp_source,
         "temporal_stability": stability.to_dict(),
         "target_roi_xywh": asdict(target_roi),
         "anchor_roi_xywh": asdict(anchor_roi),

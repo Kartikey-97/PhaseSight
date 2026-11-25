@@ -119,6 +119,38 @@ def test_confidence_gate_baseline_contaminated():
         build_baseline([bad_r, bad_r, bad_r])
 
 
+@pytest.mark.parametrize(
+    "qx,qy,should_pass,failing_axis",
+    [
+        ("VALID", "VALID", True, None),
+        ("VALID", "CONTAMINATED", False, "Y"),
+        ("CONTAMINATED", "VALID", False, "X"),
+        ("CONTAMINATED", "CONTAMINATED", False, "X"),
+        ("VALID", "LOW_SIGNAL", False, "Y"),
+        ("LOW_SIGNAL", "VALID", False, "X"),
+        ("VALID", "UNKNOWN", False, "Y"),
+    ],
+)
+def test_baseline_admission_matrix(qx, qy, should_pass, failing_axis):
+    """Full-vector baseline requires BOTH X and Y axes to be VALID across all runs."""
+    r1 = _make_sample_run()
+    r2 = _make_sample_run()
+    r3 = _make_sample_run()
+    for r in (r1, r2, r3):
+        r["x_axis"]["signal_quality"] = qx
+        r["y_axis"]["signal_quality"] = qy
+
+    if should_pass:
+        base = build_baseline([r1, r2, r3], require_valid_axes=["x", "y"])
+        assert base.run_count == 3
+        assert base.x_axis is not None
+        assert base.y_axis is not None
+    else:
+        expected_status = qx if failing_axis == "X" else qy
+        with pytest.raises(ValueError, match=f"{failing_axis}-axis signal quality is '{expected_status}', expected 'VALID'"):
+            build_baseline([r1, r2, r3], require_valid_axes=["x", "y"])
+
+
 def test_review_gate_rms_trigger():
     r = _make_sample_run(rms=0.232)
     base = build_baseline([r, r, r])

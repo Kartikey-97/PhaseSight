@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
+import tempfile
+
+# Ensure headless Matplotlib does not complain about sandbox cache directory
+os.environ.setdefault("MPLCONFIGDIR", tempfile.gettempdir())
 
 from .analysis import compare_inspection_summaries
 from .baseline import (
@@ -69,9 +74,8 @@ def _build_parser() -> argparse.ArgumentParser:
     compare.add_argument("--noise-floor-multiple", type=float, default=3.0)
     compare.add_argument("--out", type=Path, default=Path("comparison.json"))
 
-    ui = sub.add_parser("ui", help="Launch the local Streamlit inspection interface")
-    ui.add_argument("--port", type=int, default=8501, help="Port to run Streamlit on")
-    ui.add_argument("--host", type=str, default="localhost", help="Host address to bind to")
+    ui = sub.add_parser("ui", help="Show launch instructions for the Next.js + FastAPI Precision Workstation")
+    ui.add_argument("--launch", action="store_true", help="Execute ./scripts/dev.sh directly")
 
     build_base = sub.add_parser(
         "build-baseline",
@@ -284,19 +288,18 @@ def main() -> None:
 
     if args.command == "ui":
         import subprocess
-        import sys
-        app_path = Path(__file__).parent / "app.py"
-        cmd = [
-            sys.executable,
-            "-m",
-            "streamlit",
-            "run",
-            str(app_path),
-            f"--server.port={args.port}",
-            f"--server.address={args.host}",
-        ]
-        print(f"Starting PhaseSight UI on http://{args.host}:{args.port}...")
-        subprocess.run(cmd, check=True)
+        dev_script = Path(__file__).resolve().parent.parent / "scripts" / "dev.sh"
+        if getattr(args, "launch", False) and dev_script.is_file():
+            print(f"Starting PhaseSight Workstation via {dev_script}...")
+            subprocess.run([str(dev_script)], check=True)
+            return
+        print(
+            "PhaseSight Precision Workstation runs on Next.js + FastAPI.\n"
+            "Launch both servers concurrently with:\n"
+            "  ./scripts/dev.sh\n"
+            "Then open http://127.0.0.1:3000 in your browser.\n"
+            "(Or run: phasesight ui --launch)"
+        )
         return
 
     if args.command == "build-baseline":

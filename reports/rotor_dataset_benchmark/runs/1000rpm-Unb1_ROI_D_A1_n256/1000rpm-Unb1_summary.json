@@ -1,0 +1,71 @@
+{
+  "video": "data/rotor_dataset/Raw videos/1000rpm-Unb1.avi",
+  "fps_used": 500.0,
+  "frames_analysed": 500,
+  "duration_s": 4.98,
+  "timestamp_source": "container_pts",
+  "temporal_stability": {
+    "total_frames": 499,
+    "duration_s": 4.98,
+    "nominal_fps": 500.0,
+    "measured_fps": 99.99999999999991,
+    "median_dt_s": 0.010000000000000009,
+    "mean_dt_s": 0.01,
+    "std_dt_s": 2.8298532686301227e-16,
+    "min_dt_s": 0.009999999999998899,
+    "max_dt_s": 0.010000000000001563,
+    "jitter_ratio": 2.8298532686301202e-14,
+    "robust_jitter_ratio": 3.2920382386905105e-14,
+    "dropped_frames_count": 0,
+    "dropped_frame_indices": [],
+    "large_gap_count": 0,
+    "status": "STABLE",
+    "status_reasons": []
+  },
+  "target_roi_xywh": {
+    "x": 250,
+    "y": 460,
+    "width": 64,
+    "height": 64
+  },
+  "anchor_roi_xywh": {
+    "x": 600,
+    "y": 560,
+    "width": 64,
+    "height": 64
+  },
+  "x_axis": {
+    "dominant_frequency_hz": 6.709785087660207,
+    "rms_displacement_px": 0.10310979300832601,
+    "peak_to_median_db": 21.2499173718402,
+    "signal_quality": "VALID",
+    "anchor_dominant_frequency_hz": 2.5046889990563566,
+    "anchor_peak_to_median_db": 12.558616076999392,
+    "target_dominant_frequency_hz": 6.698181896027408,
+    "second_harmonic_ratio": 0.4443772858992718,
+    "frequency_resolution_hz": 0.39062499999999967,
+    "sampling_rate_hz": 99.99999999999991
+  },
+  "y_axis": {
+    "dominant_frequency_hz": 6.708160771645038,
+    "rms_displacement_px": 0.1319010752340239,
+    "peak_to_median_db": 20.771447476595117,
+    "signal_quality": "VALID",
+    "anchor_dominant_frequency_hz": 5.202325170904126,
+    "anchor_peak_to_median_db": 13.58039385949954,
+    "target_dominant_frequency_hz": 6.693574860126432,
+    "second_harmonic_ratio": 0.09709310480805385,
+    "frequency_resolution_hz": 0.39062499999999967,
+    "sampling_rate_hz": 99.99999999999991
+  },
+  "mean_min_phase_correlation_response": 0.9007000349801947,
+  "interpretation": "Screening measurement in pixels; not a calibrated vibration diagnosis.",
+  "quality_notes": {
+    "CONTAMINATED": "A strong peak at the same frequency appears in the anchor ROI; inspect the anchor for shared motion, lighting/compression artefacts or a poor reference region.",
+    "LOW_SIGNAL": "No sufficiently prominent, reliable vibration peak was found in this axis."
+  },
+  "outputs": {
+    "csv": "reports/rotor_dataset_benchmark/runs/1000rpm-Unb1_ROI_D_A1_n256/1000rpm-Unb1_motion.csv",
+    "plot": "reports/rotor_dataset_benchmark/runs/1000rpm-Unb1_ROI_D_A1_n256/1000rpm-Unb1_spectrum.png"
+  }
+}

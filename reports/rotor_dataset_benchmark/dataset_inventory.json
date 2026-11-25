@@ -1,0 +1,1062 @@
+{
+  "dataset_name": "Vibration Displacement Dataset of Rotors under Various Operational Conditions",
+  "total_files": 35,
+  "video_count": 15,
+  "csv_count": 15,
+  "videos": [
+    {
+      "file": "1000rpm-Unb1.avi",
+      "type": "AVI Video",
+      "size_bytes": 7870640,
+      "resolution": "1280x800",
+      "width": 1280,
+      "height": 800,
+      "container_fps": 100.0,
+      "physical_fps": 500.0,
+      "reported_frame_count": 500,
+      "decodable_frame_count": 500,
+      "duration_container_s": 5.0,
+      "duration_physical_s": 1.0,
+      "codec": "FMP4",
+      "duplicate_frames": 0,
+      "corrupt_frames": 0,
+      "pts_frozen": false,
+      "pts_constant_step": true,
+      "pts_unique_count": 500,
+      "status": "VALID"
+    },
+    {
+      "file": "1000rpm-Unb2.avi",
+      "type": "AVI Video",
+      "size_bytes": 9374642,
+      "resolution": "1280x800",
+      "width": 1280,
+      "height": 800,
+      "container_fps": 100.0,
+      "physical_fps": 500.0,
+      "reported_frame_count": 500,
+      "decodable_frame_count": 500,
+      "duration_container_s": 5.0,
+      "duration_physical_s": 1.0,
+      "codec": "FMP4",
+      "duplicate_frames": 0,
+      "corrupt_frames": 0,
+      "pts_frozen": false,
+      "pts_constant_step": true,
+      "pts_unique_count": 500,
+      "status": "VALID"
+    },
+    {
+      "file": "1000rpm-Unb3.avi",
+      "type": "AVI Video",
+      "size_bytes": 7791606,
+      "resolution": "1280x800",
+      "width": 1280,
+      "height": 800,
+      "container_fps": 100.0,
+      "physical_fps": 500.0,
+      "reported_frame_count": 500,
+      "decodable_frame_count": 500,
+      "duration_container_s": 5.0,
+      "duration_physical_s": 1.0,
+      "codec": "FMP4",
+      "duplicate_frames": 0,
+      "corrupt_frames": 0,
+      "pts_frozen": false,
+      "pts_constant_step": true,
+      "pts_unique_count": 500,
+      "status": "VALID"
+    },
+    {
+      "file": "2000rpm-Unb1.avi",
+      "type": "AVI Video",
+      "size_bytes": 9170928,
+      "resolution": "1280x800",
+      "width": 1280,
+      "height": 800,
+      "container_fps": 100.0,
+      "physical_fps": 500.0,
+      "reported_frame_count": 500,
+      "decodable_frame_count": 500,
+      "duration_container_s": 5.0,
+      "duration_physical_s": 1.0,
+      "codec": "FMP4",
+      "duplicate_frames": 0,
+      "corrupt_frames": 0,
+      "pts_frozen": false,
+      "pts_constant_step": true,
+      "pts_unique_count": 500,
+      "status": "VALID"
+    },
+    {
+      "file": "2000rpm-Unb2.avi",
+      "type": "AVI Video",
+      "size_bytes": 11132682,
+      "resolution": "1280x800",
+      "width": 1280,
+      "height": 800,
+      "container_fps": 100.0,
+      "physical_fps": 500.0,
+      "reported_frame_count": 500,
+      "decodable_frame_count": 500,
+      "duration_container_s": 5.0,
+      "duration_physical_s": 1.0,
+      "codec": "FMP4",
+      "duplicate_frames": 0,
+      "corrupt_frames": 0,
+      "pts_frozen": false,
+      "pts_constant_step": true,
+      "pts_unique_count": 500,
+      "status": "VALID"
+    },
+    {
+      "file": "2000rpm-Unb3.avi",
+      "type": "AVI Video",
+      "size_bytes": 9412766,
+      "resolution": "1280x800",
+      "width": 1280,
+      "height": 800,
+      "container_fps": 100.0,
+      "physical_fps": 500.0,
+      "reported_frame_count": 500,
+      "decodable_frame_count": 500,
+      "duration_container_s": 5.0,
+      "duration_physical_s": 1.0,
+      "codec": "FMP4",
+      "duplicate_frames": 0,
+      "corrupt_frames": 0,
+      "pts_frozen": false,
+      "pts_constant_step": true,
+      "pts_unique_count": 500,
+      "status": "VALID"
+    },
+    {
+      "file": "3000rpm-Unb1.avi",
+      "type": "AVI Video",
+      "size_bytes": 7943722,
+      "resolution": "1280x800",
+      "width": 1280,
+      "height": 800,
+      "container_fps": 100.0,
+      "physical_fps": 500.0,
+      "reported_frame_count": 500,
+      "decodable_frame_count": 500,
+      "duration_container_s": 5.0,
+      "duration_physical_s": 1.0,
+      "codec": "FMP4",
+      "duplicate_frames": 0,
+      "corrupt_frames": 0,
+      "pts_frozen": false,
+      "pts_constant_step": true,
+      "pts_unique_count": 500,
+      "status": "VALID"
+    },
+    {
+      "file": "3000rpm-Unb2.avi",
+      "type": "AVI Video",
+      "size_bytes": 9678666,
+      "resolution": "1280x800",
+      "width": 1280,
+      "height": 800,
+      "container_fps": 100.0,
+      "physical_fps": 500.0,
+      "reported_frame_count": 500,
+      "decodable_frame_count": 500,
+      "duration_container_s": 5.0,
+      "duration_physical_s": 1.0,
+      "codec": "FMP4",
+      "duplicate_frames": 0,
+      "corrupt_frames": 0,
+      "pts_frozen": false,
+      "pts_constant_step": true,
+      "pts_unique_count": 500,
+      "status": "VALID"
+    },
+    {
+      "file": "3000rpm-Unb3.avi",
+      "type": "AVI Video",
+      "size_bytes": 7964818,
+      "resolution": "1280x800",
+      "width": 1280,
+      "height": 800,
+      "container_fps": 100.0,
+      "physical_fps": 500.0,
+      "reported_frame_count": 500,
+      "decodable_frame_count": 500,
+      "duration_container_s": 5.0,
+      "duration_physical_s": 1.0,
+      "codec": "FMP4",
+      "duplicate_frames": 0,
+      "corrupt_frames": 0,
+      "pts_frozen": false,
+      "pts_constant_step": true,
+      "pts_unique_count": 500,
+      "status": "VALID"
+    },
+    {
+      "file": "4s-Unb1.avi",
+      "type": "AVI Video",
+      "size_bytes": 70849136,
+      "resolution": "1280x800",
+      "width": 1280,
+      "height": 800,
+      "container_fps": 100.0,
+      "physical_fps": 500.0,
+      "reported_frame_count": 3719,
+      "decodable_frame_count": 3719,
+      "duration_container_s": 37.19,
+      "duration_physical_s": 7.438,
+      "codec": "FMP4",
+      "duplicate_frames": 0,
+      "corrupt_frames": 0,
+      "pts_frozen": false,
+      "pts_constant_step": true,
+      "pts_unique_count": 3719,
+      "status": "VALID"
+    },
+    {
+      "file": "4s-Unb2.avi",
+      "type": "AVI Video",
+      "size_bytes": 71423838,
+      "resolution": "1280x800",
+      "width": 1280,
+      "height": 800,
+      "container_fps": 100.0,
+      "physical_fps": 500.0,
+      "reported_frame_count": 3669,
+      "decodable_frame_count": 3669,
+      "duration_container_s": 36.69,
+      "duration_physical_s": 7.338,
+      "codec": "FMP4",
+      "duplicate_frames": 0,
+      "corrupt_frames": 0,
+      "pts_frozen": false,
+      "pts_constant_step": true,
+      "pts_unique_count": 3669,
+      "status": "VALID"
+    },
+    {
+      "file": "4s-Unb3.avi",
+      "type": "AVI Video",
+      "size_bytes": 64813556,
+      "resolution": "1280x800",
+      "width": 1280,
+      "height": 800,
+      "container_fps": 100.0,
+      "physical_fps": 500.0,
+      "reported_frame_count": 4117,
+      "decodable_frame_count": 4117,
+      "duration_container_s": 41.17,
+      "duration_physical_s": 8.234,
+      "codec": "FMP4",
+      "duplicate_frames": 0,
+      "corrupt_frames": 0,
+      "pts_frozen": false,
+      "pts_constant_step": true,
+      "pts_unique_count": 4117,
+      "status": "VALID"
+    },
+    {
+      "file": "6s-Unb1.avi",
+      "type": "AVI Video",
+      "size_bytes": 71567272,
+      "resolution": "1280x800",
+      "width": 1280,
+      "height": 800,
+      "container_fps": 100.0,
+      "physical_fps": 500.0,
+      "reported_frame_count": 3761,
+      "decodable_frame_count": 3761,
+      "duration_container_s": 37.61,
+      "duration_physical_s": 7.522,
+      "codec": "FMP4",
+      "duplicate_frames": 0,
+      "corrupt_frames": 0,
+      "pts_frozen": false,
+      "pts_constant_step": true,
+      "pts_unique_count": 3761,
+      "status": "VALID"
+    },
+    {
+      "file": "6s-Unb2.avi",
+      "type": "AVI Video",
+      "size_bytes": 74068830,
+      "resolution": "1280x800",
+      "width": 1280,
+      "height": 800,
+      "container_fps": 100.0,
+      "physical_fps": 500.0,
+      "reported_frame_count": 3808,
+      "decodable_frame_count": 3808,
+      "duration_container_s": 38.08,
+      "duration_physical_s": 7.616,
+      "codec": "FMP4",
+      "duplicate_frames": 0,
+      "corrupt_frames": 0,
+      "pts_frozen": false,
+      "pts_constant_step": true,
+      "pts_unique_count": 3808,
+      "status": "VALID"
+    },
+    {
+      "file": "6s-Unb3.avi",
+      "type": "AVI Video",
+      "size_bytes": 66915346,
+      "resolution": "1280x800",
+      "width": 1280,
+      "height": 800,
+      "container_fps": 100.0,
+      "physical_fps": 500.0,
+      "reported_frame_count": 4117,
+      "decodable_frame_count": 4117,
+      "duration_container_s": 41.17,
+      "duration_physical_s": 8.234,
+      "codec": "FMP4",
+      "duplicate_frames": 0,
+      "corrupt_frames": 0,
+      "pts_frozen": false,
+      "pts_constant_step": true,
+      "pts_unique_count": 4117,
+      "status": "VALID"
+    }
+  ],
+  "csvs": [
+    {
+      "file": "1000rpm-Unb1.csv",
+      "type": "CSV Sensor Data",
+      "size_bytes": 1036438,
+      "has_explicit_header": false,
+      "columns": 4,
+      "samples": 13000,
+      "sampling_rate_hz": 1000.0,
+      "duration_s": 13.0,
+      "nan_count": 0,
+      "inf_count": 0,
+      "channels": [
+        {
+          "channel": 1,
+          "min": -0.0634237796314022,
+          "max": 0.0521415816327687,
+          "mean": -6.487118534655915e-17,
+          "std": 0.029979609284345426,
+          "peak_to_peak": 0.11556536126417088
+        },
+        {
+          "channel": 2,
+          "min": -0.0930609224013646,
+          "max": 0.0721271506648494,
+          "mean": 5.504485756091526e-16,
+          "std": 0.04484644813818887,
+          "peak_to_peak": 0.165188073066214
+        },
+        {
+          "channel": 3,
+          "min": -0.0905324660338323,
+          "max": 0.0737401753261107,
+          "mean": -1.1898089351365553e-15,
+          "std": 0.042686491769141514,
+          "peak_to_peak": 0.16427264135994302
+        },
+        {
+          "channel": 4,
+          "min": -0.0432208744856099,
+          "max": 0.0343382876630031,
+          "mean": -2.8640764973339665e-16,
+          "std": 0.021117911930875366,
+          "peak_to_peak": 0.077559162148613
+        }
+      ],
+      "status": "VALID"
+    },
+    {
+      "file": "1000rpm-Unb2.csv",
+      "type": "CSV Sensor Data",
+      "size_bytes": 716794,
+      "has_explicit_header": false,
+      "columns": 4,
+      "samples": 9000,
+      "sampling_rate_hz": 1000.0,
+      "duration_s": 9.0,
+      "nan_count": 0,
+      "inf_count": 0,
+      "channels": [
+        {
+          "channel": 1,
+          "min": -0.0723348284749305,
+          "max": 0.0533318481687916,
+          "mean": 3.8891112552619235e-16,
+          "std": 0.03296137261940965,
+          "peak_to_peak": 0.1256666766437221
+        },
+        {
+          "channel": 2,
+          "min": -0.108261598164184,
+          "max": 0.0750772759746597,
+          "mean": 5.334374917096183e-16,
+          "std": 0.04961077428294675,
+          "peak_to_peak": 0.1833388741388437
+        },
+        {
+          "channel": 3,
+          "min": -0.107016288362747,
+          "max": 0.0775221169774186,
+          "mean": 6.908054375445418e-18,
+          "std": 0.04741234678210061,
+          "peak_to_peak": 0.1845384053401656
+        },
+        {
+          "channel": 4,
+          "min": -0.0479442204186777,
+          "max": 0.0357388641787873,
+          "mean": -2.277900090774665e-16,
+          "std": 0.02291424885050613,
+          "peak_to_peak": 0.083683084597465
+        }
+      ],
+      "status": "VALID"
+    },
+    {
+      "file": "1000rpm-Unb3.csv",
+      "type": "CSV Sensor Data",
+      "size_bytes": 1333746,
+      "has_explicit_header": false,
+      "columns": 4,
+      "samples": 17000,
+      "sampling_rate_hz": 1000.0,
+      "duration_s": 17.0,
+      "nan_count": 0,
+      "inf_count": 0,
+      "channels": [
+        {
+          "channel": 1,
+          "min": -0.066742155576404,
+          "max": 0.050685635710872,
+          "mean": 7.91131865900538e-17,
+          "std": 0.030706306753481866,
+          "peak_to_peak": 0.11742779128727601
+        },
+        {
+          "channel": 2,
+          "min": -0.107823913698104,
+          "max": 0.0790188542130194,
+          "mean": 6.730041360804214e-16,
+          "std": 0.05003310959841529,
+          "peak_to_peak": 0.1868427679111234
+        },
+        {
+          "channel": 3,
+          "min": -0.0948871962287026,
+          "max": 0.0739941702731596,
+          "mean": -6.223779661575142e-17,
+          "std": 0.04395523572509281,
+          "peak_to_peak": 0.1688813665018622
+        },
+        {
+          "channel": 4,
+          "min": -0.0457457823947451,
+          "max": 0.033991475882583,
+          "mean": -5.747167447827236e-16,
+          "std": 0.021602016628009972,
+          "peak_to_peak": 0.07973725827732811
+        }
+      ],
+      "status": "VALID"
+    },
+    {
+      "file": "2000rpm-Unb1.csv",
+      "type": "CSV Sensor Data",
+      "size_bytes": 757047,
+      "has_explicit_header": false,
+      "columns": 4,
+      "samples": 10000,
+      "sampling_rate_hz": 1000.0,
+      "duration_s": 10.0,
+      "nan_count": 0,
+      "inf_count": 0,
+      "channels": [
+        {
+          "channel": 1,
+          "min": -0.300843501712888,
+          "max": 0.301005495244963,
+          "mean": -7.648992550457478e-16,
+          "std": 0.19993266561370932,
+          "peak_to_peak": 0.601848996957851
+        },
+        {
+          "channel": 2,
+          "min": -0.358308966318783,
+          "max": 0.289627282058267,
+          "mean": -8.770761894538737e-17,
+          "std": 0.23591360926647167,
+          "peak_to_peak": 0.64793624837705
+        },
+        {
+          "channel": 3,
+          "min": -0.322230508543581,
+          "max": 0.175038307625356,
+          "mean": -1.4089618360912936e-15,
+          "std": 0.18961370576426348,
+          "peak_to_peak": 0.497268816168937
+        },
+        {
+          "channel": 4,
+          "min": -0.201854228526861,
+          "max": 0.199862457473644,
+          "mean": 2.46658249380971e-16,
+          "std": 0.1294725200152107,
+          "peak_to_peak": 0.40171668600050503
+        }
+      ],
+      "status": "VALID"
+    },
+    {
+      "file": "2000rpm-Unb2.csv",
+      "type": "CSV Sensor Data",
+      "size_bytes": 2110268,
+      "has_explicit_header": false,
+      "columns": 4,
+      "samples": 28000,
+      "sampling_rate_hz": 1000.0,
+      "duration_s": 28.0,
+      "nan_count": 0,
+      "inf_count": 0,
+      "channels": [
+        {
+          "channel": 1,
+          "min": -0.433361360789518,
+          "max": 0.429227839402984,
+          "mean": -2.6960180120129603e-16,
+          "std": 0.2867339850797356,
+          "peak_to_peak": 0.862589200192502
+        },
+        {
+          "channel": 2,
+          "min": -0.561999726043115,
+          "max": 0.45693889625849,
+          "mean": -7.796937698653243e-16,
+          "std": 0.3684756964222903,
+          "peak_to_peak": 1.018938622301605
+        },
+        {
+          "channel": 3,
+          "min": -0.474718846025978,
+          "max": 0.462304421869592,
+          "mean": 2.2995573699193172e-15,
+          "std": 0.3337213417199173,
+          "peak_to_peak": 0.93702326789557
+        },
+        {
+          "channel": 4,
+          "min": -0.259073784952447,
+          "max": 0.267583545648874,
+          "mean": -7.197734471934122e-16,
+          "std": 0.16781638155756468,
+          "peak_to_peak": 0.5266573306013209
+        }
+      ],
+      "status": "VALID"
+    },
+    {
+      "file": "2000rpm-Unb3.csv",
+      "type": "CSV Sensor Data",
+      "size_bytes": 977362,
+      "has_explicit_header": false,
+      "columns": 4,
+      "samples": 13000,
+      "sampling_rate_hz": 1000.0,
+      "duration_s": 13.0,
+      "nan_count": 0,
+      "inf_count": 0,
+      "channels": [
+        {
+          "channel": 1,
+          "min": -0.380009061234284,
+          "max": 0.376926693410231,
+          "mean": 4.585050288159647e-16,
+          "std": 0.25020691252828214,
+          "peak_to_peak": 0.756935754644515
+        },
+        {
+          "channel": 2,
+          "min": -0.419309763341338,
+          "max": 0.213001012807968,
+          "mean": 1.2379840742281747e-15,
+          "std": 0.23478220388149248,
+          "peak_to_peak": 0.632310776149306
+        },
+        {
+          "channel": 3,
+          "min": -0.394202067384975,
+          "max": 0.199692143711479,
+          "mean": -2.5360909953283574e-15,
+          "std": 0.2245014158165743,
+          "peak_to_peak": 0.593894211096454
+        },
+        {
+          "channel": 4,
+          "min": -0.237241634677242,
+          "max": 0.236478490013121,
+          "mean": 2.5063711789768533e-16,
+          "std": 0.1573517957141209,
+          "peak_to_peak": 0.47372012469036295
+        }
+      ],
+      "status": "VALID"
+    },
+    {
+      "file": "3000rpm-Unb1.csv",
+      "type": "CSV Sensor Data",
+      "size_bytes": 784148,
+      "has_explicit_header": false,
+      "columns": 4,
+      "samples": 10000,
+      "sampling_rate_hz": 1000.0,
+      "duration_s": 10.0,
+      "nan_count": 0,
+      "inf_count": 0,
+      "channels": [
+        {
+          "channel": 1,
+          "min": -0.0447099907304358,
+          "max": 0.0480642777086242,
+          "mean": -7.759903830617531e-17,
+          "std": 0.02746406950548325,
+          "peak_to_peak": 0.09277426843906
+        },
+        {
+          "channel": 2,
+          "min": -0.05131128240416,
+          "max": 0.042536250793977,
+          "mean": -4.521549801239644e-16,
+          "std": 0.02377785375101714,
+          "peak_to_peak": 0.09384753319813699
+        },
+        {
+          "channel": 3,
+          "min": -0.0554840947508581,
+          "max": 0.056861472236081,
+          "mean": 9.654499422140362e-17,
+          "std": 0.031180167393586825,
+          "peak_to_peak": 0.1123455669869391
+        },
+        {
+          "channel": 4,
+          "min": -0.0522441325661395,
+          "max": 0.0550823433415855,
+          "mean": -6.024569731977181e-16,
+          "std": 0.03462865127106533,
+          "peak_to_peak": 0.10732647590772501
+        }
+      ],
+      "status": "VALID"
+    },
+    {
+      "file": "3000rpm-Unb2.csv",
+      "type": "CSV Sensor Data",
+      "size_bytes": 1273666,
+      "has_explicit_header": false,
+      "columns": 4,
+      "samples": 16000,
+      "sampling_rate_hz": 1000.0,
+      "duration_s": 16.0,
+      "nan_count": 0,
+      "inf_count": 0,
+      "channels": [
+        {
+          "channel": 1,
+          "min": -0.0563578171000128,
+          "max": 0.0565875154875883,
+          "mean": 5.078455017626382e-16,
+          "std": 0.03335374033005774,
+          "peak_to_peak": 0.1129453325876011
+        },
+        {
+          "channel": 2,
+          "min": -0.0648456900159992,
+          "max": 0.0546339309577488,
+          "mean": 4.4360869144721706e-16,
+          "std": 0.03180509081389838,
+          "peak_to_peak": 0.11947962097374801
+        },
+        {
+          "channel": 3,
+          "min": -0.0775868144994635,
+          "max": 0.0790151404941325,
+          "mean": 7.884838615357382e-17,
+          "std": 0.04563812280873786,
+          "peak_to_peak": 0.156601954993596
+        },
+        {
+          "channel": 4,
+          "min": -0.0354795997145957,
+          "max": 0.0291688187145283,
+          "mean": 3.2972409524933967e-16,
+          "std": 0.017860396442949355,
+          "peak_to_peak": 0.064648418429124
+        }
+      ],
+      "status": "VALID"
+    },
+    {
+      "file": "3000rpm-Unb3.csv",
+      "type": "CSV Sensor Data",
+      "size_bytes": 715011,
+      "has_explicit_header": false,
+      "columns": 4,
+      "samples": 9000,
+      "sampling_rate_hz": 1000.0,
+      "duration_s": 9.0,
+      "nan_count": 0,
+      "inf_count": 0,
+      "channels": [
+        {
+          "channel": 1,
+          "min": -0.0640759193651856,
+          "max": 0.0643686190079125,
+          "mean": -2.0449074532456911e-16,
+          "std": 0.03966561593585095,
+          "peak_to_peak": 0.1284445383730981
+        },
+        {
+          "channel": 2,
+          "min": -0.0751928483507253,
+          "max": 0.0631951723491177,
+          "mean": -2.622593500392314e-16,
+          "std": 0.03897814815998933,
+          "peak_to_peak": 0.13838802069984302
+        },
+        {
+          "channel": 3,
+          "min": -0.0840095710356973,
+          "max": 0.0868604919315166,
+          "mean": -1.3572723192270232e-15,
+          "std": 0.05053462333460177,
+          "peak_to_peak": 0.1708700629672139
+        },
+        {
+          "channel": 4,
+          "min": -0.0579022900269035,
+          "max": 0.0617351639996496,
+          "mean": -5.933525276052226e-17,
+          "std": 0.039321727613831584,
+          "peak_to_peak": 0.1196374540265531
+        }
+      ],
+      "status": "VALID"
+    },
+    {
+      "file": "4s-Unb1.csv",
+      "type": "CSV Sensor Data",
+      "size_bytes": 1432002,
+      "has_explicit_header": false,
+      "columns": 4,
+      "samples": 18000,
+      "sampling_rate_hz": 1000.0,
+      "duration_s": 18.0,
+      "nan_count": 0,
+      "inf_count": 0,
+      "channels": [
+        {
+          "channel": 1,
+          "min": -0.52116605213173,
+          "max": 0.536094435391053,
+          "mean": -1.0038389872432971e-15,
+          "std": 0.06122157478919481,
+          "peak_to_peak": 1.057260487522783
+        },
+        {
+          "channel": 2,
+          "min": -0.762187856413286,
+          "max": 0.283898050970864,
+          "mean": -2.352685947294554e-16,
+          "std": 0.06729943028973556,
+          "peak_to_peak": 1.04608590738415
+        },
+        {
+          "channel": 3,
+          "min": -0.874913083793945,
+          "max": 0.0389718585603424,
+          "mean": 2.565848768022584e-15,
+          "std": 0.0645822208385536,
+          "peak_to_peak": 0.9138849423542873
+        },
+        {
+          "channel": 4,
+          "min": -0.34460087807573,
+          "max": 0.329630356898713,
+          "mean": 2.313211350863437e-16,
+          "std": 0.035251309358527785,
+          "peak_to_peak": 0.674231234974443
+        }
+      ],
+      "status": "VALID"
+    },
+    {
+      "file": "4s-Unb2.csv",
+      "type": "CSV Sensor Data",
+      "size_bytes": 2097478,
+      "has_explicit_header": false,
+      "columns": 4,
+      "samples": 26000,
+      "sampling_rate_hz": 1000.0,
+      "duration_s": 26.0,
+      "nan_count": 0,
+      "inf_count": 0,
+      "channels": [
+        {
+          "channel": 1,
+          "min": -0.573909695903528,
+          "max": 0.482908859071399,
+          "mean": -3.40513941829648e-16,
+          "std": 0.05635020453895894,
+          "peak_to_peak": 1.0568185549749272
+        },
+        {
+          "channel": 2,
+          "min": -0.599382599332581,
+          "max": 0.446892707714939,
+          "mean": -1.368204694839593e-15,
+          "std": 0.06379475063917325,
+          "peak_to_peak": 1.04627530704752
+        },
+        {
+          "channel": 3,
+          "min": -0.622270832331191,
+          "max": 0.430475629881354,
+          "mean": -6.646307436032937e-16,
+          "std": 0.0996830318538666,
+          "peak_to_peak": 1.052746462212545
+        },
+        {
+          "channel": 4,
+          "min": -0.376118385425099,
+          "max": 0.380186037008194,
+          "mean": -1.4385074328297028e-16,
+          "std": 0.033099131830482444,
+          "peak_to_peak": 0.756304422433293
+        }
+      ],
+      "status": "VALID"
+    },
+    {
+      "file": "4s-Unb3.csv",
+      "type": "CSV Sensor Data",
+      "size_bytes": 1380346,
+      "has_explicit_header": false,
+      "columns": 4,
+      "samples": 17000,
+      "sampling_rate_hz": 1000.0,
+      "duration_s": 17.0,
+      "nan_count": 0,
+      "inf_count": 0,
+      "channels": [
+        {
+          "channel": 1,
+          "min": -0.465608099971185,
+          "max": 0.592031186878329,
+          "mean": -4.112788541105521e-16,
+          "std": 0.07466410048995105,
+          "peak_to_peak": 1.057639286849514
+        },
+        {
+          "channel": 2,
+          "min": -0.938242693488979,
+          "max": 0.109421544423229,
+          "mean": -1.1201497246100403e-16,
+          "std": 0.07724693968534346,
+          "peak_to_peak": 1.047664237912208
+        },
+        {
+          "channel": 3,
+          "min": -0.937415538737571,
+          "max": 0.114036692441963,
+          "mean": -4.292514056621311e-16,
+          "std": 0.08482261445599787,
+          "peak_to_peak": 1.051452231179534
+        },
+        {
+          "channel": 4,
+          "min": -0.443172075809101,
+          "max": 0.455655593307535,
+          "mean": 6.451310074386556e-16,
+          "std": 0.04843513922568575,
+          "peak_to_peak": 0.898827669116636
+        }
+      ],
+      "status": "VALID"
+    },
+    {
+      "file": "6s-Unb1.csv",
+      "type": "CSV Sensor Data",
+      "size_bytes": 1812967,
+      "has_explicit_header": false,
+      "columns": 4,
+      "samples": 23000,
+      "sampling_rate_hz": 1000.0,
+      "duration_s": 23.0,
+      "nan_count": 0,
+      "inf_count": 0,
+      "channels": [
+        {
+          "channel": 1,
+          "min": -0.523070674665994,
+          "max": 0.533526914035008,
+          "mean": -7.167213682449706e-17,
+          "std": 0.06535052140595218,
+          "peak_to_peak": 1.056597588701002
+        },
+        {
+          "channel": 2,
+          "min": -0.767692501283757,
+          "max": 0.279877036796768,
+          "mean": 1.5780227366359094e-15,
+          "std": 0.07288897547596558,
+          "peak_to_peak": 1.047569538080525
+        },
+        {
+          "channel": 3,
+          "min": -0.981095796865234,
+          "max": 0.031497936713596,
+          "mean": 5.026935389690587e-15,
+          "std": 0.07186610135352124,
+          "peak_to_peak": 1.01259373357883
+        },
+        {
+          "channel": 4,
+          "min": -0.376235638966583,
+          "max": 0.361602316288469,
+          "mean": 9.694274368761715e-16,
+          "std": 0.03853967171573863,
+          "peak_to_peak": 0.737837955255052
+        }
+      ],
+      "status": "VALID"
+    },
+    {
+      "file": "6s-Unb2.csv",
+      "type": "CSV Sensor Data",
+      "size_bytes": 2149225,
+      "has_explicit_header": false,
+      "columns": 4,
+      "samples": 27000,
+      "sampling_rate_hz": 1000.0,
+      "duration_s": 27.0,
+      "nan_count": 0,
+      "inf_count": 0,
+      "channels": [
+        {
+          "channel": 1,
+          "min": -0.585189742786041,
+          "max": 0.471755078631131,
+          "mean": 1.8842540696453027e-16,
+          "std": 0.06427017363545137,
+          "peak_to_peak": 1.056944821417172
+        },
+        {
+          "channel": 2,
+          "min": -0.617112872492481,
+          "max": 0.42909930133391,
+          "mean": 1.6042475989605817e-15,
+          "std": 0.0739680156467084,
+          "peak_to_peak": 1.046212173826391
+        },
+        {
+          "channel": 3,
+          "min": -0.737835586590126,
+          "max": 0.312827479325382,
+          "mean": -6.468570535178986e-16,
+          "std": 0.07791934065997373,
+          "peak_to_peak": 1.050663065915508
+        },
+        {
+          "channel": 4,
+          "min": -0.406415260238284,
+          "max": 0.397965110079557,
+          "mean": 7.626492030491742e-16,
+          "std": 0.03894518481221715,
+          "peak_to_peak": 0.8043803703178409
+        }
+      ],
+      "status": "VALID"
+    },
+    {
+      "file": "6s-Unb3.csv",
+      "type": "CSV Sensor Data",
+      "size_bytes": 1509997,
+      "has_explicit_header": false,
+      "columns": 4,
+      "samples": 19000,
+      "sampling_rate_hz": 1000.0,
+      "duration_s": 19.0,
+      "nan_count": 0,
+      "inf_count": 0,
+      "channels": [
+        {
+          "channel": 1,
+          "min": -0.465338322335302,
+          "max": 0.592616630619824,
+          "mean": 1.676553632765526e-16,
+          "std": 0.08000696074936184,
+          "peak_to_peak": 1.057954952955126
+        },
+        {
+          "channel": 2,
+          "min": -0.952950261064588,
+          "max": 0.0941142112469533,
+          "mean": -1.2266211438384887e-15,
+          "std": 0.0853023639639662,
+          "peak_to_peak": 1.0470644723115412
+        },
+        {
+          "channel": 3,
+          "min": -0.941350874095032,
+          "max": 0.109533158094401,
+          "mean": 5.789053447140184e-16,
+          "std": 0.09146506348240736,
+          "peak_to_peak": 1.050884032189433
+        },
+        {
+          "channel": 4,
+          "min": -0.47041651607789,
+          "max": 0.450349947378712,
+          "mean": 1.3836884854275636e-16,
+          "std": 0.05173359973601507,
+          "peak_to_peak": 0.920766463456602
+        }
+      ],
+      "status": "VALID"
+    }
+  ],
+  "auxiliary": [
+    {
+      "file": "Frame-TestRig.jpg",
+      "type": "Image",
+      "size_bytes": 30763,
+      "status": "Valid Image (1233x362, 3 channels)"
+    },
+    {
+      "file": "Rotor-TestRig.jpg",
+      "type": "Image",
+      "size_bytes": 141923,
+      "status": "Valid Image (1706x502, 3 channels)"
+    },
+    {
+      "file": "README.md",
+      "type": "Documentation",
+      "size_bytes": 5691,
+      "status": "Available"
+    },
+    {
+      "file": "Rotor Test-rig.x_t",
+      "type": "CAD Model",
+      "size_bytes": 1582998,
+      "status": "Available"
+    },
+    {
+      "file": "Rotor Test-rig.STEP",
+      "type": "CAD Model",
+      "size_bytes": 5181592,
+      "status": "Available"
+    }
+  ]
+}

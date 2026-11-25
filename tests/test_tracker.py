@@ -330,3 +330,84 @@ def test_dynamic_roi_non_finite_rejection():
     assert "target_non_finite" in sample.rejection_reason
     assert np.isnan(sample.relative_dx_px)
 
+
+def test_from_patches_and_process_patches_match_standard_tracker():
+    config = SyntheticConfig(duration_s=1.0, seed=42)
+    frames, _ = make_scene(config)
+    frame0 = frames[0]
+
+    # Standard tracker initialized from full frame
+    tracker_standard = PhaseCorrelationTracker(frame0, DEFAULT_TARGET_ROI, DEFAULT_ANCHOR_ROI)
+
+    # Patch-direct tracker initialized from crops
+    t_crop = DEFAULT_TARGET_ROI.crop(frame0)
+    a_crop = DEFAULT_ANCHOR_ROI.crop(frame0)
+    tracker_patches = PhaseCorrelationTracker.from_patches(
+        t_crop, a_crop, DEFAULT_TARGET_ROI, DEFAULT_ANCHOR_ROI, frame_shape=frame0.shape[:2]
+    )
+
+    for i, frame in enumerate(frames[1:10], start=1):
+        ts = i / config.fps
+        sample_std = tracker_standard.process(frame, ts)
+        sample_pat = tracker_patches.process_patches(
+            DEFAULT_TARGET_ROI.crop(frame), DEFAULT_ANCHOR_ROI.crop(frame), ts
+        )
+
+        assert sample_std.valid == sample_pat.valid
+        if sample_std.valid:
+            assert np.isclose(sample_std.target_dx_px, sample_pat.target_dx_px, atol=1e-5)
+            assert np.isclose(sample_std.target_dy_px, sample_pat.target_dy_px, atol=1e-5)
+            assert np.isclose(sample_std.anchor_dx_px, sample_pat.anchor_dx_px, atol=1e-5)
+            assert np.isclose(sample_std.anchor_dy_px, sample_pat.anchor_dy_px, atol=1e-5)
+            assert np.isclose(sample_std.relative_dx_px, sample_pat.relative_dx_px, atol=1e-5)
+            assert np.isclose(sample_std.relative_dy_px, sample_pat.relative_dy_px, atol=1e-5)
+            assert np.isclose(sample_std.target_response, sample_pat.target_response, atol=1e-5)
+            assert np.isclose(sample_std.anchor_response, sample_pat.anchor_response, atol=1e-5)
+
+
+def test_recalibrate_resets_shift_to_zero():
+    config = SyntheticConfig(duration_s=1.0, vibration_amplitude_px=2.0, seed=43)
+    frames, _ = make_scene(config)
+    tracker = PhaseCorrelationTracker(frames[0], DEFAULT_TARGET_ROI, DEFAULT_ANCHOR_ROI)
+
+    # Process frame 10 (displaced from frame 0)
+    sample_before = tracker.process(frames[10], 10 / config.fps)
+    assert sample_before.valid is True
+
+    # Recalibrate to frame 10
+    tracker.recalibrate(
+        DEFAULT_TARGET_ROI.crop(frames[10]),
+        DEFAULT_ANCHOR_ROI.crop(frames[10]),
+    )
+
+    # Now measuring frame 10 relative to the new reference should yield ~(0.0, 0.0) px
+    sample_after = tracker.process(frames[10], 10 / config.fps)
+    assert sample_after.valid is True
+    assert abs(sample_after.target_dx_px) < 0.05
+    assert abs(sample_after.target_dy_px) < 0.05
+    assert abs(sample_after.relative_dx_px) < 0.05
+    assert abs(sample_after.relative_dy_px) < 0.05
+
+
+def test_recalibrate_rejects_flat_patch_without_corrupting_references():
+    config = SyntheticConfig(duration_s=1.0, seed=44)
+    frames, _ = make_scene(config)
+    tracker = PhaseCorrelationTracker(frames[0], DEFAULT_TARGET_ROI, DEFAULT_ANCHOR_ROI)
+
+    orig_target_ref = tracker._target_ref.copy()
+    orig_anchor_ref = tracker._anchor_ref.copy()
+
+    flat_patch = np.ones((DEFAULT_TARGET_ROI.height, DEFAULT_TARGET_ROI.width), dtype=np.uint8) * 128
+    valid_anchor = DEFAULT_ANCHOR_ROI.crop(frames[0])
+
+    with pytest.raises(ValueError, match="lacks visible texture"):
+        tracker.recalibrate(flat_patch, valid_anchor)
+
+    # Verify existing references were not corrupted
+    assert np.array_equal(tracker._target_ref, orig_target_ref)
+    assert np.array_equal(tracker._anchor_ref, orig_anchor_ref)
+
+    # Valid process still succeeds
+    sample = tracker.process(frames[1], 1 / config.fps)
+    assert sample.valid is True
+

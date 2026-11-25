@@ -67,8 +67,10 @@ class PhaseCorrelationTracker:
         self.target_roi = target_roi
         self.anchor_roi = anchor_roi
         self.min_texture_std = float(min_texture_std)
+        if self.min_texture_std <= 0:
+            raise ValueError("min_texture_std must be > 0")
         self.min_response = float(min_response)
-        self._frame_shape = gray.shape
+        self._frame_shape: tuple[int, ...] | None = gray.shape
         self._target_ref = np.ascontiguousarray(target_roi.crop(gray))
         self._anchor_ref = np.ascontiguousarray(anchor_roi.crop(gray))
 
@@ -83,6 +85,9 @@ class PhaseCorrelationTracker:
                 f"Anchor ROI lacks visible texture in reference frame (std={anchor_ref_std:.2f} < {self.min_texture_std:.1f})"
             )
 
+        self._target_ref_norm = _normalise_patch(self._target_ref)
+        self._anchor_ref_norm = _normalise_patch(self._anchor_ref)
+
         self._target_window = cv2.createHanningWindow(
             (target_roi.width, target_roi.height), cv2.CV_32F
         )
@@ -90,21 +95,156 @@ class PhaseCorrelationTracker:
             (anchor_roi.width, anchor_roi.height), cv2.CV_32F
         )
 
-    def process(self, frame: np.ndarray, timestamp_s: float) -> MotionSample:
-        gray = to_gray_float(frame)
-        if gray.shape != self._frame_shape:
+    @classmethod
+    def from_patches(
+        cls,
+        target_patch: np.ndarray,
+        anchor_patch: np.ndarray,
+        target_roi: ROI,
+        anchor_roi: ROI,
+        *,
+        frame_shape: tuple[int, int] | None = None,
+        min_texture_std: float = 2.0,
+        min_response: float = 0.15,
+    ) -> "PhaseCorrelationTracker":
+        """Initialize tracker directly from target and anchor image patches."""
+        if min_texture_std <= 0:
+            raise ValueError("min_texture_std must be > 0")
+        if target_roi.width < 32 or target_roi.height < 32:
+            raise ValueError("target_roi must be at least 32x32 pixels")
+        if anchor_roi.width < 32 or anchor_roi.height < 32:
+            raise ValueError("anchor_roi must be at least 32x32 pixels")
+
+        if frame_shape is not None:
+            target_roi.validate(frame_shape, name="target_roi")
+            anchor_roi.validate(frame_shape, name="anchor_roi")
+
+        if _rectangles_overlap(target_roi, anchor_roi):
+            raise ValueError("Target ROI and anchor ROI should not overlap")
+
+        target_gray = to_gray_float(target_patch)
+        anchor_gray = to_gray_float(anchor_patch)
+
+        expected_target_shape = (target_roi.height, target_roi.width)
+        expected_anchor_shape = (anchor_roi.height, anchor_roi.width)
+        if target_gray.shape != expected_target_shape:
             raise ValueError(
-                f"Frame size changed from {self._frame_shape[::-1]} to {gray.shape[::-1]}"
+                f"Target patch dimensions {target_gray.shape} do not match target_roi {expected_target_shape}"
             )
+        if anchor_gray.shape != expected_anchor_shape:
+            raise ValueError(
+                f"Anchor patch dimensions {anchor_gray.shape} do not match anchor_roi {expected_anchor_shape}"
+            )
+
+        if not np.all(np.isfinite(target_gray)):
+            raise ValueError("Target patch contains non-finite values")
+        if not np.all(np.isfinite(anchor_gray)):
+            raise ValueError("Anchor patch contains non-finite values")
+
+        target_std = float(np.std(target_gray))
+        anchor_std = float(np.std(anchor_gray))
+        if target_std < min_texture_std:
+            raise ValueError(
+                f"Target ROI lacks visible texture in reference frame (std={target_std:.2f} < {min_texture_std:.1f})"
+            )
+        if anchor_std < min_texture_std:
+            raise ValueError(
+                f"Anchor ROI lacks visible texture in reference frame (std={anchor_std:.2f} < {min_texture_std:.1f})"
+            )
+
+        tracker = cls.__new__(cls)
+        tracker.target_roi = target_roi
+        tracker.anchor_roi = anchor_roi
+        tracker.min_texture_std = float(min_texture_std)
+        tracker.min_response = float(min_response)
+        tracker._frame_shape = tuple(frame_shape) if frame_shape is not None else None
+        tracker._target_ref = np.ascontiguousarray(target_gray)
+        tracker._anchor_ref = np.ascontiguousarray(anchor_gray)
+        tracker._target_ref_norm = _normalise_patch(tracker._target_ref)
+        tracker._anchor_ref_norm = _normalise_patch(tracker._anchor_ref)
+
+        tracker._target_window = cv2.createHanningWindow(
+            (target_roi.width, target_roi.height), cv2.CV_32F
+        )
+        tracker._anchor_window = cv2.createHanningWindow(
+            (anchor_roi.width, anchor_roi.height), cv2.CV_32F
+        )
+        return tracker
+
+    def recalibrate(self, target_patch: np.ndarray, anchor_patch: np.ndarray) -> None:
+        """Replace target and anchor references with newly acquired patches."""
+        target_gray = to_gray_float(target_patch)
+        anchor_gray = to_gray_float(anchor_patch)
+        expected_target_shape = (self.target_roi.height, self.target_roi.width)
+        expected_anchor_shape = (self.anchor_roi.height, self.anchor_roi.width)
+        if target_gray.shape != expected_target_shape:
+            raise ValueError(
+                f"Target patch shape {target_gray.shape} does not match expected {expected_target_shape}"
+            )
+        if anchor_gray.shape != expected_anchor_shape:
+            raise ValueError(
+                f"Anchor patch shape {anchor_gray.shape} does not match expected {expected_anchor_shape}"
+            )
+        if not np.all(np.isfinite(target_gray)):
+            raise ValueError("Target patch contains non-finite values")
+        if not np.all(np.isfinite(anchor_gray)):
+            raise ValueError("Anchor patch contains non-finite values")
+
+        target_std = float(np.std(target_gray))
+        anchor_std = float(np.std(anchor_gray))
+        if target_std < self.min_texture_std:
+            raise ValueError(
+                f"Target patch lacks visible texture (std={target_std:.2f} < {self.min_texture_std:.1f})"
+            )
+        if anchor_std < self.min_texture_std:
+            raise ValueError(
+                f"Anchor patch lacks visible texture (std={anchor_std:.2f} < {self.min_texture_std:.1f})"
+            )
+
+        new_target_ref = np.ascontiguousarray(target_gray)
+        new_anchor_ref = np.ascontiguousarray(anchor_gray)
+        new_target_ref_norm = _normalise_patch(new_target_ref)
+        new_anchor_ref_norm = _normalise_patch(new_anchor_ref)
+
+        self._target_ref = new_target_ref
+        self._anchor_ref = new_anchor_ref
+        self._target_ref_norm = new_target_ref_norm
+        self._anchor_ref_norm = new_anchor_ref_norm
+
+    def process_patches(
+        self,
+        target_patch: np.ndarray,
+        anchor_patch: np.ndarray,
+        timestamp_s: float,
+    ) -> MotionSample:
+        """Measure displacement using isolated target and anchor crops."""
         if not np.isfinite(timestamp_s):
             raise ValueError("timestamp_s must be finite")
 
-        target_crop = self.target_roi.crop(gray)
-        anchor_crop = self.anchor_roi.crop(gray)
+        try:
+            target_crop = to_gray_float(target_patch)
+            anchor_crop = to_gray_float(anchor_patch)
+        except Exception as exc:
+            return MotionSample(
+                timestamp_s=float(timestamp_s),
+                target_dx_px=float("nan"),
+                target_dy_px=float("nan"),
+                anchor_dx_px=float("nan"),
+                anchor_dy_px=float("nan"),
+                relative_dx_px=float("nan"),
+                relative_dy_px=float("nan"),
+                target_response=0.0,
+                anchor_response=0.0,
+                valid=False,
+                rejection_reason=f"invalid_patch_input: {exc}",
+            )
 
         expected_target_shape = (self.target_roi.height, self.target_roi.width)
         expected_anchor_shape = (self.anchor_roi.height, self.anchor_roi.width)
-        if target_crop.shape != expected_target_shape or anchor_crop.shape != expected_anchor_shape:
+        if (
+            target_crop.shape != expected_target_shape
+            or anchor_crop.shape != expected_anchor_shape
+        ):
             return MotionSample(
                 timestamp_s=float(timestamp_s),
                 target_dx_px=float("nan"),
@@ -149,9 +289,13 @@ class PhaseCorrelationTracker:
         if not (target_tex_ok and anchor_tex_ok):
             reasons = []
             if not target_tex_ok:
-                reasons.append(f"target_low_texture (std={target_std:.2f} < {self.min_texture_std:.2f})")
+                reasons.append(
+                    f"target_low_texture (std={target_std:.2f} < {self.min_texture_std:.2f})"
+                )
             if not anchor_tex_ok:
-                reasons.append(f"anchor_low_texture (std={anchor_std:.2f} < {self.min_texture_std:.2f})")
+                reasons.append(
+                    f"anchor_low_texture (std={anchor_std:.2f} < {self.min_texture_std:.2f})"
+                )
             return MotionSample(
                 timestamp_s=float(timestamp_s),
                 target_dx_px=float("nan"),
@@ -170,10 +314,10 @@ class PhaseCorrelationTracker:
         anchor = _normalise_patch(anchor_crop)
 
         (target_dx, target_dy), target_response = cv2.phaseCorrelate(
-            _normalise_patch(self._target_ref), target, self._target_window
+            self._target_ref_norm, target, self._target_window
         )
         (anchor_dx, anchor_dy), anchor_response = cv2.phaseCorrelate(
-            _normalise_patch(self._anchor_ref), anchor, self._anchor_window
+            self._anchor_ref_norm, anchor, self._anchor_window
         )
 
         target_resp = float(np.clip(target_response, 0.0, 1.0))
@@ -185,9 +329,13 @@ class PhaseCorrelationTracker:
         if not (target_resp_ok and anchor_resp_ok):
             reasons = []
             if not target_resp_ok:
-                reasons.append(f"target_low_response (response={target_resp:.3f} < {self.min_response:.3f})")
+                reasons.append(
+                    f"target_low_response (response={target_resp:.3f} < {self.min_response:.3f})"
+                )
             if not anchor_resp_ok:
-                reasons.append(f"anchor_low_response (response={anchor_resp:.3f} < {self.min_response:.3f})")
+                reasons.append(
+                    f"anchor_low_response (response={anchor_resp:.3f} < {self.min_response:.3f})"
+                )
             return MotionSample(
                 timestamp_s=float(timestamp_s),
                 target_dx_px=float("nan"),
@@ -215,6 +363,19 @@ class PhaseCorrelationTracker:
             valid=True,
             rejection_reason=None,
         )
+
+    def process(self, frame: np.ndarray, timestamp_s: float) -> MotionSample:
+        gray = to_gray_float(frame)
+        if self._frame_shape is not None and gray.shape != self._frame_shape:
+            raise ValueError(
+                f"Frame size changed from {self._frame_shape[::-1]} to {gray.shape[::-1]}"
+            )
+        if not np.isfinite(timestamp_s):
+            raise ValueError("timestamp_s must be finite")
+
+        target_crop = self.target_roi.crop(gray)
+        anchor_crop = self.anchor_roi.crop(gray)
+        return self.process_patches(target_crop, anchor_crop, timestamp_s)
 
 
 

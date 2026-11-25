@@ -1,0 +1,93 @@
+{
+  "targets": [
+    {
+      "id": "T1_span1_mid",
+      "name": "Target 1 (Span 1 Mid - near Sensor #2)",
+      "x": 520,
+      "y": 460,
+      "w": 64,
+      "h": 64,
+      "description": "Shaft top edge in Span 1; high contrast edge against uniform backdrop near antinode.",
+      "sensor_relation": "Sensor #2 (Span 1 midspan deflection)"
+    },
+    {
+      "id": "T2_span2_mid",
+      "name": "Target 2 (Span 2 Mid - near Sensor #3)",
+      "x": 720,
+      "y": 460,
+      "w": 64,
+      "h": 64,
+      "description": "Shaft top edge in Span 2; clear edge near central disk/coupling antinode.",
+      "sensor_relation": "Sensor #3 (Span 2 midspan deflection)"
+    },
+    {
+      "id": "T3_span2_right",
+      "name": "Target 3 (Span 2 Right - near Sensor #4)",
+      "x": 820,
+      "y": 460,
+      "w": 64,
+      "h": 64,
+      "description": "Shaft top edge near Bearing Pedestal 2.",
+      "sensor_relation": "Sensor #4 (Recommended reference sensor for acceleration)"
+    },
+    {
+      "id": "T4_span1_left",
+      "name": "Target 4 (Span 1 Left - near Sensor #1)",
+      "x": 350,
+      "y": 460,
+      "w": 64,
+      "h": 64,
+      "description": "Shaft top edge near Bearing Pedestal 1.",
+      "sensor_relation": "Sensor #1 (Span 1 near bearing)"
+    },
+    {
+      "id": "T5_span1_bottom",
+      "name": "Target 5 (Span 1 Bottom Edge)",
+      "x": 520,
+      "y": 485,
+      "w": 64,
+      "h": 64,
+      "description": "Shaft bottom edge in Span 1.",
+      "sensor_relation": "Sensor #2 complementary edge"
+    },
+    {
+      "id": "T6_rotating_surface",
+      "name": "Target 6 (Rotating Surface Internal - Failure Case)",
+      "x": 550,
+      "y": 488,
+      "w": 48,
+      "h": 32,
+      "description": "Inside shaft body without edge; texture rotates, testing phase correlation limits.",
+      "sensor_relation": "Rotational texture failure test"
+    }
+  ],
+  "anchors": [
+    {
+      "id": "A1_base_center",
+      "name": "Anchor 1 (Base Center Mechanical Fixture)",
+      "x": 600,
+      "y": 560,
+      "w": 64,
+      "h": 64,
+      "description": "Machine bed casting / fixture below shaft; texture std=29.2 px, high rigidity."
+    },
+    {
+      "id": "A2_pedestal1",
+      "name": "Anchor 2 (Bearing Pedestal 1 Housing)",
+      "x": 210,
+      "y": 380,
+      "w": 48,
+      "h": 48,
+      "description": "Rigid bearing housing 1; texture std=24.2 px."
+    },
+    {
+      "id": "A3_pedestal2",
+      "name": "Anchor 3 (Bearing Pedestal 2 Housing)",
+      "x": 910,
+      "y": 440,
+      "w": 48,
+      "h": 48,
+      "description": "Rigid bearing housing 2; texture std=38.1 px."
+    }
+  ]
+}

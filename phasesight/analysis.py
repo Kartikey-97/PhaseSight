@@ -51,13 +51,85 @@ def is_anchor_contaminated(
     This is a conservative environmental/shared-motion check. It does not
     prove the cause; the operator should inspect the anchor ROI and recording.
     """
-    tolerance = frequency_tolerance_hz or max(
-        relative_result.frequency_resolution_hz, anchor_result.frequency_resolution_hz
+    tolerance = (
+        float(frequency_tolerance_hz)
+        if frequency_tolerance_hz is not None
+        else max(
+            relative_result.frequency_resolution_hz,
+            anchor_result.frequency_resolution_hz,
+        )
     )
-    same_peak = abs(
-        relative_result.dominant_frequency_hz - anchor_result.dominant_frequency_hz
-    ) <= tolerance
-    return bool(same_peak and anchor_result.peak_to_median_db >= min_anchor_peak_to_median_db)
+
+    # Condition A: existing global peak check
+    same_peak = (
+        abs(relative_result.dominant_frequency_hz - anchor_result.dominant_frequency_hz)
+        <= tolerance
+    )
+    if same_peak and anchor_result.peak_to_median_db >= min_anchor_peak_to_median_db:
+        return True
+
+    # Condition B: DEF-01 secondary anchor peak check
+    freqs = anchor_result.frequencies_hz
+    psd = anchor_result.psd_px2_per_hz
+    if (
+        freqs is not None
+        and psd is not None
+        and len(freqs) >= 5
+        and len(freqs) == len(psd)
+    ):
+        window_indices = np.flatnonzero(
+            np.abs(freqs - relative_result.dominant_frequency_hz) <= tolerance
+        )
+        if len(window_indices) > 0:
+            cand_idx = int(window_indices[np.argmax(psd[window_indices])])
+            is_interior = 0 < cand_idx < len(psd) - 1
+            if is_interior:
+                is_local_peak = (
+                    psd[cand_idx] >= psd[cand_idx - 1]
+                    and psd[cand_idx] >= psd[cand_idx + 1]
+                    and (
+                        psd[cand_idx] > psd[cand_idx - 1]
+                        or psd[cand_idx] > psd[cand_idx + 1]
+                    )
+                )
+                if is_local_peak:
+                    nyquist = (
+                        (anchor_result.sampling_rate_hz / 2.0)
+                        if anchor_result.sampling_rate_hz > 0
+                        else float(freqs[-1])
+                    )
+                    in_band_mask = (freqs >= 0.5) & (freqs <= 0.95 * nyquist)
+                    in_band_indices = np.flatnonzero(in_band_mask)
+
+                    anchor_dom_idx = int(
+                        np.argmin(np.abs(freqs - anchor_result.dominant_frequency_hz))
+                    )
+
+                    bg_indices = [
+                        i
+                        for i in in_band_indices
+                        if abs(i - cand_idx) > 2 and abs(i - anchor_dom_idx) > 2
+                    ]
+                    if len(bg_indices) < 3:
+                        bg_indices = [
+                            i for i in in_band_indices if abs(i - cand_idx) > 2
+                        ]
+
+                    bg_median = (
+                        float(np.median(psd[bg_indices]))
+                        if len(bg_indices) > 0
+                        else 0.0
+                    )
+                    cand_prominence_db = float(
+                        10.0
+                        * np.log10(
+                            max(float(psd[cand_idx]), 1e-30) / max(bg_median, 1e-30)
+                        )
+                    )
+                    if cand_prominence_db >= min_anchor_peak_to_median_db:
+                        return True
+
+    return False
 
 
 def analyse_displacement(

@@ -1,0 +1,18 @@
+[
+  {
+    "condition": "4s-Unb1",
+    "video_duration_s": 7.436,
+    "sensor_duration_s": 17.999,
+    "video_frames": 3718,
+    "sensor_samples": 18000,
+    "plot": "reports/rotor_dataset_benchmark/plots/4s-Unb1_rampup_spectrogram.png"
+  },
+  {
+    "condition": "6s-Unb1",
+    "video_duration_s": 7.52,
+    "sensor_duration_s": 22.999,
+    "video_frames": 3760,
+    "sensor_samples": 23000,
+    "plot": "reports/rotor_dataset_benchmark/plots/6s-Unb1_rampup_spectrogram.png"
+  }
+]

@@ -85,6 +85,53 @@ def test_matching_peak_in_static_anchor_is_marked_as_contamination():
     assert is_anchor_contaminated(relative_20, anchor_result)
 
 
+def test_anchor_contamination_secondary_peak_def_01():
+    from phasesight.analysis import is_anchor_contaminated
+
+    fs = 60.0
+    t = np.arange(1200) / fs
+    # Relative vibration at 16.5 Hz
+    relative = analyse_displacement(t, 0.4 * np.sin(2 * np.pi * 16.5 * t), min_frequency_hz=1, max_frequency_hz=28)
+    assert abs(relative.dominant_frequency_hz - 16.5) < 0.2
+
+    # Anchor has dominant peak at 3.0 Hz (amplitude 0.6) and secondary prominent peak at 16.5 Hz (amplitude 0.25)
+    anchor_with_secondary = analyse_displacement(
+        t,
+        0.6 * np.sin(2 * np.pi * 3.0 * t) + 0.25 * np.sin(2 * np.pi * 16.5 * t) + np.random.default_rng(42).normal(0, 0.005, len(t)),
+        min_frequency_hz=1,
+        max_frequency_hz=28,
+    )
+    assert abs(anchor_with_secondary.dominant_frequency_hz - 3.0) < 0.2
+    # Regression test a: Secondary prominent anchor peak at 16.5 Hz matching relative peak at 16.5 Hz -> True
+    assert is_anchor_contaminated(relative, anchor_with_secondary)
+
+    # Regression test b: Anchor has strong global peak at 3.0 Hz and only flat noise near 16.5 Hz -> False
+    anchor_without_secondary = analyse_displacement(
+        t,
+        0.6 * np.sin(2 * np.pi * 3.0 * t) + np.random.default_rng(42).normal(0, 0.005, len(t)),
+        min_frequency_hz=1,
+        max_frequency_hz=28,
+    )
+    assert abs(anchor_without_secondary.dominant_frequency_hz - 3.0) < 0.2
+    assert not is_anchor_contaminated(relative, anchor_without_secondary)
+
+
+def test_anchor_contamination_zero_tolerance_not_defaulting():
+    from phasesight.analysis import is_anchor_contaminated
+
+    fs = 60.0
+    t = np.arange(600) / fs
+    # Slight frequency difference between relative (10.0 Hz) and anchor (10.2 Hz)
+    relative = analyse_displacement(t, 0.5 * np.sin(2 * np.pi * 10.0 * t), min_frequency_hz=1, max_frequency_hz=25)
+    anchor = analyse_displacement(t, 0.5 * np.sin(2 * np.pi * 10.2 * t), min_frequency_hz=1, max_frequency_hz=25)
+
+    # With default tolerance (~0.23 Hz), they match -> True
+    assert is_anchor_contaminated(relative, anchor)
+
+    # With explicit frequency_tolerance_hz=0.0, diff > 0.0 -> False
+    assert not is_anchor_contaminated(relative, anchor, frequency_tolerance_hz=0.0)
+
+
 def test_compare_inspection_summaries_detects_changes():
     baseline = {
         "x_axis": {

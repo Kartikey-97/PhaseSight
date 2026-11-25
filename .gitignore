@@ -2,8 +2,6 @@
 __pycache__/
 *.py[cod]
 *$py.class
-
-# C extensions
 *.so
 
 # Distribution / packaging
@@ -14,7 +12,7 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+/lib/
 lib64/
 parts/
 sdist/
@@ -32,21 +30,47 @@ venv/
 ENV/
 env/
 
-# IDE / OS
+# IDE & OS files
 .DS_Store
 .vscode/
 .idea/
 
-# Testing & caches
+# Testing, profiling & caches
 .pytest_cache/
 .coverage
 htmlcov/
 .matplotlib/
 
-# Output directories & scratch
+# Next.js & Frontend dependencies
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+
+# External Heavy Datasets (503 MB Mendeley CC-BY-4.0 dataset - DOI 10.17632/47y7rwc2yg.1)
+data/rotor_dataset/
+
+# Local Storage Runtime Artifacts & SQLite WAL
+data/storage/uploads/
+data/storage/batch_outputs/
+data/storage/*.bak
+data/storage/*.db-wal
+data/storage/*.db-shm
+data/storage/*.db
+data/storage/npz/
+data/storage/evidence/
+*.db
+*.npz
+
+# Scratch, agent traces & review archives
+.backup_pre_redesign/
+.agents/
+.claude/
+scratch/
+PhaseSight_P0_Code_Review.zip
+FINAL_BENCHMARK_INTEGRITY_REPORT.md
+tmp_*.y4m
+tmp_*.mp4
+*.y4m
 output/
 rois.json
 validation_results.json
-data/storage/
-*.db
-*.npz

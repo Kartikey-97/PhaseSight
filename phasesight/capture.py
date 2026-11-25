@@ -20,7 +20,7 @@ import numpy as np
 
 from phasesight.synthetic import SyntheticConfig, make_scene
 
-VALID_STABILITY_STATUSES = ("STABLE", "WARNING_JITTER", "REJECTED_UNSTABLE")
+VALID_STABILITY_STATUSES = ("STABLE", "WARNING_JITTER", "REJECTED_UNSTABLE", "ASSUMED_UNIFORM")
 
 
 @dataclass(frozen=True)
@@ -38,7 +38,7 @@ class CaptureStabilityReport:
     max_dt_s: float
     jitter_ratio: float  # std(dt) / median(dt)
     robust_jitter_ratio: float  # 1.4826 * MAD(dt) / median(dt)
-    dropped_frames_count: int
+    dropped_frames_count: int | None = 0
     dropped_frame_indices: list[int] = field(default_factory=list)
     large_gap_count: int = 0  # intervals > 2.5 * median(dt)
     status: str = "STABLE"
@@ -330,13 +330,24 @@ def open_capture_source(
         return MockVideoCapture(fps=fps)
 
     if src_str.isdigit():
-        cap = cv2.VideoCapture(int(src_str))
+        idx = int(src_str)
+        cap = cv2.VideoCapture(idx)
+        if not cap.isOpened() and hasattr(cv2, "CAP_AVFOUNDATION"):
+            cap = cv2.VideoCapture(idx, cv2.CAP_AVFOUNDATION)
     else:
         try:
             val = int(source)
             cap = cv2.VideoCapture(val)
+            if not cap.isOpened() and hasattr(cv2, "CAP_AVFOUNDATION"):
+                cap = cv2.VideoCapture(val, cv2.CAP_AVFOUNDATION)
         except (ValueError, TypeError):
             cap = cv2.VideoCapture(src_str)
+
+    if cap.isOpened():
+        try:
+            cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+        except Exception:
+            pass
 
     if not cap.isOpened():
         raise RuntimeError(

@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+from pathlib import Path
 
 from phasesight.analysis import analyse_displacement
 from phasesight.capture import calculate_timestamp_stability
@@ -177,4 +178,159 @@ def test_timestamp_integrity_8_video_container_fallback_and_metadata(tmp_path):
     assert summary["temporal_stability"]["status"] in ("STABLE", "WARNING_JITTER")
     assert summary["timestamp_source"] in ("container_pts", "inferred_cfr_fallback")
     assert summary["x_axis"]["signal_quality"] == "VALID"
+
+
+# ==============================================================================
+# Task 4: Explicit FPS / Timebase Precedence Regression Tests
+# ==============================================================================
+
+def test_fps_override_precedence_over_container_metadata(tmp_path):
+    """Explicit FPS override (500 FPS) must take precedence over container metadata (100 FPS)."""
+    import csv
+
+    config = SyntheticConfig(duration_s=0.5, fps=100, vibration_frequency_hz=3.4, seed=12)
+    frames, _ = make_scene(config)
+    video = tmp_path / "container_100fps.mp4"
+    write_video(video, frames, 100)
+
+    summary = analyse_video(
+        video,
+        DEFAULT_TARGET_ROI,
+        DEFAULT_ANCHOR_ROI,
+        tmp_path / "out_500fps",
+        fps_override=500.0,
+        nperseg=64,
+    )
+
+    assert summary["fps_used"] == 500.0
+    assert summary["timestamp_source"] == "explicit_fps_override"
+    assert summary["timebase_source"] == "explicit_fps_override"
+    assert summary["x_axis"]["sampling_rate_hz"] == pytest.approx(500.0, rel=1e-3)
+
+    # Verify timestamp spacing in generated motion CSV
+    csv_path = Path(summary["outputs"]["csv"])
+    assert csv_path.exists()
+    timestamps = []
+    with csv_path.open("r", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            timestamps.append(float(row["timestamp_s"]))
+
+    dt = np.diff(timestamps)
+    assert np.allclose(dt, 1.0 / 500.0, atol=1e-7)
+    assert timestamps[0] == pytest.approx(1.0 / 500.0, abs=1e-7)
+
+
+def test_no_override_preserves_container_pts_behavior(tmp_path):
+    """When no override is provided, existing container PTS / metadata FPS behavior is preserved."""
+    import csv
+
+    config = SyntheticConfig(duration_s=0.5, fps=100, vibration_frequency_hz=3.4, seed=13)
+    frames, _ = make_scene(config)
+    video = tmp_path / "container_100fps_no_override.mp4"
+    write_video(video, frames, 100)
+
+    summary = analyse_video(
+        video,
+        DEFAULT_TARGET_ROI,
+        DEFAULT_ANCHOR_ROI,
+        tmp_path / "out_no_override",
+        fps_override=None,
+        nperseg=64,
+    )
+
+    assert summary["fps_used"] == 100.0
+    assert summary["timestamp_source"] in ("container_pts", "inferred_cfr_fallback")
+    assert summary["timebase_source"] in ("container_pts", "inferred_cfr_fallback")
+    assert summary["x_axis"]["sampling_rate_hz"] == pytest.approx(100.0, rel=1e-3)
+
+    csv_path = Path(summary["outputs"]["csv"])
+    timestamps = []
+    with csv_path.open("r", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            timestamps.append(float(row["timestamp_s"]))
+
+    dt = np.diff(timestamps)
+    assert np.allclose(dt, 1.0 / 100.0, atol=1e-4)
+
+
+def test_invalid_fps_override_rejected(tmp_path):
+    """Invalid explicit FPS values (0, negative, NaN, Inf, non-numeric) are strictly rejected."""
+    config = SyntheticConfig(duration_s=0.5, fps=60, vibration_frequency_hz=8.5, seed=14)
+    frames, _ = make_scene(config)
+    video = tmp_path / "dummy.mp4"
+    write_video(video, frames, 60)
+
+    invalid_values = [0, 0.0, -1.0, -500.0, float("nan"), float("inf"), "invalid_str"]
+    for val in invalid_values:
+        with pytest.raises(ValueError, match="Invalid explicit FPS override"):
+            analyse_video(
+                video,
+                DEFAULT_TARGET_ROI,
+                DEFAULT_ANCHOR_ROI,
+                tmp_path / "out_invalid",
+                fps_override=val,
+            )
+
+
+def test_timebase_source_and_resolution_recorded(tmp_path):
+    """Timebase source, frequency resolution, and stability audit are correctly recorded."""
+    config = SyntheticConfig(duration_s=1.0, fps=100, vibration_frequency_hz=10.0, seed=15)
+    frames, _ = make_scene(config)
+    video = tmp_path / "test_rec.mp4"
+    write_video(video, frames, 100)
+
+    summary = analyse_video(
+        video,
+        DEFAULT_TARGET_ROI,
+        DEFAULT_ANCHOR_ROI,
+        tmp_path / "out_rec",
+        fps_override=200.0,
+        nperseg=64,
+    )
+
+    assert summary["timebase_source"] == "explicit_fps_override"
+    assert summary["timestamp_source"] == "explicit_fps_override"
+    assert summary["fps_used"] == 200.0
+    assert summary["x_axis"]["frequency_resolution_hz"] == pytest.approx(200.0 / 64, rel=1e-3)
+    assert summary["temporal_stability"]["status"] == "ASSUMED_UNIFORM"
+    assert summary["temporal_stability"]["dropped_frames_count"] is None
+    assert any("explicit FPS override" in r for r in summary["temporal_stability"]["status_reasons"])
+
+
+def test_explicit_fps_stability_contract(tmp_path):
+    """Explicit FPS override must report ASSUMED_UNIFORM and not falsely report measured 0 dropped frames."""
+    config = SyntheticConfig(duration_s=0.5, fps=100, vibration_frequency_hz=5.0, seed=16)
+    frames, _ = make_scene(config)
+    video = tmp_path / "test_contract.mp4"
+    write_video(video, frames, 100)
+
+    summary_override = analyse_video(
+        video,
+        DEFAULT_TARGET_ROI,
+        DEFAULT_ANCHOR_ROI,
+        tmp_path / "out_override",
+        fps_override=500.0,
+        nperseg=64,
+    )
+    stab_override = summary_override["temporal_stability"]
+    assert stab_override["status"] == "ASSUMED_UNIFORM"
+    assert stab_override["dropped_frames_count"] is None
+    assert any("Physical capture timing, dropped frames, and exposure jitter were not independently verified" in r
+               for r in stab_override["status_reasons"])
+
+    summary_no_override = analyse_video(
+        video,
+        DEFAULT_TARGET_ROI,
+        DEFAULT_ANCHOR_ROI,
+        tmp_path / "out_no_override",
+        fps_override=None,
+        nperseg=64,
+    )
+    stab_no_override = summary_no_override["temporal_stability"]
+    assert stab_no_override["status"] in ("STABLE", "WARNING_JITTER")
+    assert isinstance(stab_no_override["dropped_frames_count"], int)
+    assert stab_no_override["dropped_frames_count"] == 0
+
 
