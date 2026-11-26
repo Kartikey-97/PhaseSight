@@ -346,7 +346,7 @@ export const LiveMonitorView: React.FC<LiveMonitorViewProps> = ({
             : null,
         playback_rate: playbackRate,
         loop: loopReplay,
-        fps_override: fpsOverride,
+        fps_override: sourceType === "video_replay" ? fpsOverride : null,
       });
 
       setActiveSessionId(session.session_id);

@@ -100,15 +100,21 @@ class MonitoringManager:
                         detail=f"Failed to resolve replay video: {exc}",
                     )
 
+            effective_fps_override = (
+                None if request.source_type == "browser_webcam" else request.fps_override
+            )
+            timebase_source = (
+                "browser_media_time"
+                if request.source_type == "browser_webcam"
+                else ("explicit_fps_override" if effective_fps_override is not None else "measured")
+            )
             config = MonitoringConfig(
                 session_id=session_id,
                 source_type=request.source_type,
                 target_roi=target_roi,
                 anchor_roi=anchor_roi,
-                expected_fps=request.fps_override or request.expected_fps,
-                timebase_source="explicit_fps_override"
-                if request.fps_override is not None
-                else "measured",
+                expected_fps=effective_fps_override or request.expected_fps,
+                timebase_source=timebase_source,
                 buffer_capacity=request.buffer_capacity,
                 nperseg_override=request.nperseg_override,
                 asset_id=request.asset_id,

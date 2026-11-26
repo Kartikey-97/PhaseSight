@@ -2,11 +2,11 @@
 
 [![Python 3.13+](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Tests: 150 Passing](https://img.shields.io/badge/tests-150%20passed-brightgreen.svg)](tests/)
+[![Tests: 139 Passing](https://img.shields.io/badge/tests-139%20passed-brightgreen.svg)](tests/)
 [![FastAPI: v0.165](https://img.shields.io/badge/FastAPI-0.165+-009688.svg)](backend/)
 [![Next.js: 16.4](https://img.shields.io/badge/Next.js-16.4-black.svg)](frontend/)
 [![Validation: T1--T6 Passed](https://img.shields.io/badge/Proposal%20Matrix-T1--T6%20Passed%20(100%25)-success.svg)](data/validation_results.json)
-[![Innovathon 2026](https://img.shields.io/badge/Prasunex%20Innovathon-2026%20Round%202-orange.svg)](#)
+[![Innovathon 2026](https://img.shields.io/badge/Prasunex%20Innovathon-2026%20Round%203-orange.svg)](#)
 
 > **PhaseSight** is a precision, local-first industrial monitoring engine and spectral workstation that transforms ordinary video cameras and high-speed sensors into sub-pixel optical vibration screening instruments. By combining phase-domain Fourier shift estimation (`cv2.phaseCorrelate`) with differential stationary anchor subtraction ($\Delta d(t) = d_{\text{target}}(t) - d_{\text{anchor}}(t)$), rolling Welch power spectral density, and robust median/scaled-MAD baselining, PhaseSight isolates machine vibration signatures from ambient optical sway and tripod jitter without requiring invasive contact accelerometers.
 
@@ -31,7 +31,7 @@ Launch the complete modern stack (FastAPI backend on port 8000 and Next.js works
 ```
 Open **[http://localhost:3000](http://localhost:3000)** in your browser to access the "Spectral Observatory" workstation.
 
-### 2. Automated Test Suite (150 Passing Tests)
+### 2. Automated Test Suite (139 Passing Tests)
 Run the full pytest suite verifying the scientific core, monitoring engine, and REST/WebSocket backend:
 ```bash
 .venv/bin/python -m pytest tests/ -q
@@ -43,28 +43,22 @@ Verify continuous streaming, pacing, baseline building, and review evaluation:
 # Verify backend WebSocket & REST pipelines
 .venv/bin/python scripts/test_live_e2e.py
 
-# Verify browser UI, getUserMedia webcam streaming, and screenshot captures
+# Verify browser UI, getUserMedia webcam streaming, /target calibrator, and screenshot captures
 .venv/bin/python scripts/test_browser_ui.py
-```
-
-### 4. Legacy Streamlit Workbench
-To run the original prototype Streamlit interface:
-```bash
-phasesight ui --port 8501
 ```
 
 ---
 
 ## Sampling Rate & Nyquist Feasibility Matrix
 
-The fundamental physical constraint of optical vibration monitoring is the Shannon-Nyquist sampling theorem ($f_{\text{Nyquist}} = f_s / 2$). PhaseSight dynamically enforces an upper usable cutoff ($f_{\text{usable}} = 0.85 \times f_{\text{Nyquist}}$) to prevent high-frequency aliasing and roll-off distortion.
+The fundamental physical constraint of optical vibration monitoring is the Shannon-Nyquist sampling theorem ($f_{\text{Nyquist}} = f_s / 2$). In `phasesight/analysis.py`, PhaseSight enforces a default analytical upper cutoff ($f_{\text{usable}} = 0.90 \times f_{\text{Nyquist}}$, capped at $0.95 \times f_{\text{Nyquist}}$) to prevent high-frequency aliasing and roll-off distortion.
 
-| Camera / Source Class | Sampling Rate ($f_s$) | Nyquist Limit ($f_{\text{Nyquist}}$) | Usable Spectral Band | Measurable Machinery & Screening Scope |
+| Camera / Source Class | Sampling Rate ($f_s$) | Nyquist Limit ($f_{\text{Nyquist}}$) | `0.90×` Cutoff | Measurable Machinery & Screening Scope |
 |---|---|---|---|---|
-| **Standard USB Webcam** | 15–30 FPS | 7.5–15.0 Hz | 0.5–12.7 Hz | Low-speed machinery: Agitators, clarifiers, conveyor drives, structural building/bridge sway, cooling tower fans (<900 RPM 1X). |
-| **Industrial / 60 FPS Webcam** | 60 FPS | 30.0 Hz | 0.5–25.5 Hz | Standard industrial electric motors (1200 & 1800 RPM nominal fundamental $1\text{X} \approx 20\text{--}29.2\text{ Hz}$), centrifugal pumps, gearboxes. |
-| **High-Rate Machine Vision** | 120–240 FPS | 60.0–120.0 Hz | 0.5–102.0 Hz | 2-pole 3600 RPM motors ($1\text{X} \approx 58.3\text{ Hz}$), $2\text{X}$ misalignment harmonics, high-speed blower fans, positive displacement compressors. |
-| **High-Speed Sensor Video** *(e.g. Mendeley Rotor Benchmark)* | 500 FPS | 250.0 Hz | 0.5–212.5 Hz | Rotor test rigs, turbomachinery unbalance dynamics ($1000\text{--}3000\text{ RPM}$, $1\text{X} \approx 16.5\text{--}50\text{ Hz}$), blade pass fundamentals, harmonics through $4\text{X}$. |
+| **Standard USB Webcam** | 15–30 FPS | 7.5–15.0 Hz | 6.75–13.5 Hz | Low-speed machinery: Agitators, clarifiers, conveyor drives, structural building/bridge sway, cooling tower fans (<750 RPM 1X). |
+| **Industrial / 60 FPS Webcam** | 60 FPS | 30.0 Hz | 27.0 Hz | Standard industrial electric motors (1X unbalance up to ~1,440 RPM / ~24 Hz, centrifugal pumps, gearboxes safely below Nyquist). |
+| **High-Rate Machine Vision** | 120–240 FPS | 60.0–120.0 Hz | 54.0–108.0 Hz | 2-pole 3600 RPM motors (60 Hz 1X) & 2X harmonics up to ~100 Hz (3000 RPM), high-speed blower fans, positive displacement compressors. |
+| **High-Speed Sensor Video** *(e.g. Mendeley Rotor Benchmark)* | 500 FPS | 250.0 Hz | 225.0 Hz | Rotor test rigs, turbomachinery unbalance dynamics ($1000\text{--}3000\text{ RPM}$, $1\text{X} \approx 16.5\text{--}50\text{ Hz}$), blade pass fundamentals, harmonics through $4\text{X}$. |
 
 ---
 
@@ -142,7 +136,9 @@ PhaseSight_Validation_Kit/
 │       └── videos.py              # Video preview frame extraction, ROI texture verification
 ├── frontend/                      # Next.js 16 Precision Workstation Frontend
 │   ├── src/
-│   │   ├── app/                   # App Router layout, providers, main shell
+│   │   ├── app/                   # App Router layout, workstation page & /target bench
+│   │   │   ├── page.tsx           # Main Precision Workstation shell
+│   │   │   └── target/page.tsx    # Dark-ground anti-overexposure optical calibrator (/target)
 │   │   ├── components/            # Precision instrument components
 │   │   │   ├── AppShell.tsx       # Header, navigation, asset selector, health badge
 │   │   │   ├── AssetsHistoryView.tsx # Asset catalog, baseline wizard, run inspector
@@ -166,16 +162,18 @@ PhaseSight_Validation_Kit/
 │   ├── capture.py                 # Video capture, mock capture, frame-rate jitter metrics
 │   ├── video.py                   # High-performance video decoding & frame iteration
 │   └── monitoring/                # Continuous Monitoring Subsystem
-│       ├── engine.py              # Background monitoring threads, circular buffer
 │       ├── session.py             # MonitoringSession orchestration, report persistence
-│       ├── rolling_buffer.py      # Thread-safe ring buffer for streaming samples
-│       ├── rolling_analysis.py    # Rolling Welch analysis, WARMING_UP gating
+│       ├── ring_buffer.py         # Thread-safe ring buffer for streaming samples
+│       ├── rolling_analysis.py    # Rolling Welch analysis, timing & WARMING_UP gating
 │       └── replay_adapter.py      # PacedVideoReplayAdapter for real-time video playback
+├── docs/                          # Technical reports, architecture spec & Round 3 PDF
 ├── scripts/
 │   ├── dev.sh                     # Unified local development launcher
+│   ├── reset_demo_db.py           # Clean Round 3 demo asset & baseline seeder
+│   ├── build_round3_pdf.py        # Headless Chromium PDF submission report generator
 │   ├── test_live_e2e.py           # Comprehensive backend REST & WebSocket verification
 │   └── test_browser_ui.py         # Playwright Chromium headless UI verification
-├── tests/                         # 150 Automated Pytest Tests
+├── tests/                         # 139 Automated Pytest Tests across 10 modules
 └── reports/e2e_screenshots/       # Automated browser verification screenshot captures
 ```
 
@@ -190,11 +188,11 @@ PhaseSight_Validation_Kit/
 
 ---
 
-## License
-MIT License. Developed for the **Prasunex Innovathon 2026 (Round 2)**.
+## License & Setup
+MIT License. Developed for the **Prasunex Innovathon 2026 (Round 3)**.
 ```bash
-git clone https://github.com/kartikeygupta/PhaseSight_Validation_Kit.git
-cd PhaseSight_Validation_Kit
+git clone https://github.com/Kartikey-97/PhaseSight.git
+cd PhaseSight
 
 python3 -m venv .venv
 source .venv/bin/activate
@@ -206,7 +204,7 @@ python -m pip install -e '.[dev]'
 
 ## Command-Line Interface (CLI) Reference
 
-PhaseSight provides 10 unified CLI subcommands covering validation, synthetic generation, video inspection, comparison, statistical baseline screening, local storage, live capture, and the GUI workbench.
+PhaseSight provides 9 unified CLI subcommands covering validation, synthetic generation, video inspection, comparison, statistical baseline screening, local storage, and live capture.
 
 ### 1. `phasesight validate`
 Executes deterministic validation suites and exports machine-readable JSON reports.
@@ -291,47 +289,9 @@ phasesight generate-synthetic data/generated/test.mp4 \
   --frequency 8.5 --amplitude 0.35 --camera-shake 0.65 --noise 1.5 --seed 42
 ```
 
-### 10. `phasesight ui`
-Launches the local Streamlit operator workbench.
-```bash
-phasesight ui --port 8501
-```
-
----
-
-## Local Operator Workbench (Streamlit GUI)
-
-The workbench (`phasesight/app.py`) provides an intuitive, asset-centric interface across 6 dedicated tabs:
-
-1. **Tab 1: Video Inspection & Live Acquisition:**
-   - Source selection: Pre-packaged portable clips, custom video upload, or Live Webcam Stream (`mock:0` or hardware index).
-   - Live camera preview frame grabber with green Target ROI and orange Anchor ROI overlay.
-   - Real-time texture validation badge ($\text{std} \ge 2.0$ px).
-   - Monotonic live recording with progress bar and **⏱️ Frame-Rate Stability Card** (`STABLE`, `WARNING_JITTER`, `REJECTED_UNSTABLE`).
-   - 1-Click Auto-Assessment Card with robust z-score deviation display and mandatory non-diagnostic disclosures.
-   - "Save Run to Asset History" persisting SQLite records and compressed NPZ arrays.
-2. **Tab 2: Asset Management & ROI Profiles:**
-   - Catalog table of registered equipment with coordinates, expected frame rates, and nominal speeds.
-   - Asset registration form with "📋 Copy ROIs from Current Inspection" shortcut.
-   - Parameter editor and cascading safe deletion.
-3. **Tab 3: Baseline Recording Wizard:**
-   - Guided workflow enforcing quorum ($N \ge 3$), spatial ROI consistency ($\pm 2$ px), and frame-rate consistency ($\pm 2\%$).
-   - Live Median + MAD feature table preview with zero-MAD $\epsilon$-protection.
-   - Commit baseline to SQLite and NPZ storage.
-4. **Tab 4: 1-to-1 Comparison:**
-   - Side-by-side comparative inspection between reference baseline and current run.
-5. **Tab 5: Inspection History & Trend Exploration:**
-   - Filterable historical run catalog with status badges (🟢 Normal, 🔴 Review, 🟡 Low confidence).
-   - On-demand NPZ array loading with 2-panel interactive Matplotlib engineering plots.
-   - Operator Review Event logging form with immutable chronological audit trail.
-6. **Tab 6: About & System Boundaries:**
-   - Technical disclosures, mathematical formulations, and engineering boundaries.
-
----
-
 ## Automated Test Suite
 
-PhaseSight features an exhaustive automated test suite with **150 passing tests** across 12 modules:
+PhaseSight features an automated test suite with **139 passing tests** across 10 modules:
 
 ```bash
 .venv/bin/python -m pytest tests/ -v
@@ -339,19 +299,17 @@ PhaseSight features an exhaustive automated test suite with **150 passing tests*
 
 | Test Module | Tests | Scope & Capabilities Verified |
 |---|---:|---|
-| `tests/test_tracker.py` | 12 | Sub-pixel phase correlation, patch-direct tracker (`from_patches`), anchor subtraction, reference patch immutability, ROI bounds, texture thresholding. |
-| `tests/test_analysis.py` | 12 | Welch PSD, quadratic peak interpolation, harmonic ratio, low-signal rejection, DEF-01 anchor contamination (Condition A & secondary peak B), timestamp monotonicity. |
-| `tests/test_video_pipeline.py` | 2 | End-to-end MP4 decode/encode round-trip, portable clip analysis, quality gating. |
-| `tests/test_baseline.py` | 17 | Multi-run aggregation, Median + MAD, scaled MAD ($1.4826 \times \text{MAD} + \epsilon$), robust z-scores, quorum rules, spatial ROI matching, `require_valid_axes` enforcement. |
+| `tests/test_tracker.py` | 19 | Sub-pixel phase correlation, patch-direct tracker (`from_patches`), anchor subtraction, reference patch immutability, ROI bounds, texture thresholding. |
+| `tests/test_analysis.py` | 22 | Welch PSD, quadratic peak interpolation, harmonic ratio, low-signal rejection, DEF-01 anchor contamination (Condition A & secondary peak B), timestamp monotonicity. |
+| `tests/test_video_pipeline.py` | 15 | End-to-end MP4 decode/encode round-trip, portable clip analysis, FPS override provenance, quality gating. |
+| `tests/test_baseline.py` | 23 | Multi-run aggregation, Median + MAD, scaled MAD ($1.4826 \times \text{MAD} + \epsilon$), robust z-scores, quorum rules, spatial ROI matching, `require_valid_axes` enforcement. |
 | `tests/test_storage.py` | 15 | SQLite schema migrations, foreign key cascades, thread-safe RLock, asset/baseline/run/review CRUD, compressed NPZ storage. |
 | `tests/test_capture.py` | 13 | Monotonic timing (`time.perf_counter()`), empirical FPS, timing jitter, dropped frame detection, `MockVideoCapture`, CLI capture. |
-| `tests/test_ui.py` | 15 | Headless `AppTest` for tabs 1-5, asset selector synchronization, baseline wizard, mock live capture, stability card gating. |
 | `tests/test_validation_suite.py` | 1 | 4-case legacy synthetic validation suite backward compatibility. |
 | `tests/test_validation_matrix.py` | 10 | Proposal Page 5 matrix (T1 through T6) and CLI validation flag integration. |
-| `tests/test_monitoring.py` | 13 | Thread-safe circular ring buffer, continuous monitoring engine, paced video replay adapter, rolling Welch warm-up buffer. |
-| `tests/test_api.py` | 22 | FastAPI REST service routes (`/health`, `/assets`, `/runs`, `/baselines`, `/videos`, `/sessions`), video preview extraction, ROI texture checks, NaN/Inf sanitization. |
-| `tests/test_ws.py` | 18 | Real-time WebSocket protocol, binary `<dIHHHHI` ROI ingest, JSON telemetry broadcast, recalibrate trigger, graceful session stop & persist. |
-| **Total** | **150** | **100% Pass Rate across all modules with zero regressions.** |
+| `tests/test_monitoring.py` | 11 | Thread-safe circular ring buffer, continuous monitoring engine, paced video replay adapter, rolling Welch warm-up & timing gates. |
+| `tests/test_api.py` | 10 | FastAPI REST service routes (`/health`, `/assets`, `/runs`, `/baselines`, `/videos`, `/sessions`), binary `<dIHHHHI` WebSocket ingest & telemetry, custom video upload, `browser_media_time` enforcement. |
+| **Total** | **139** | **100% Pass Rate across all modules with zero regressions.** |
 
 ---
 
@@ -382,4 +340,4 @@ PhaseSight's software and numerical pipeline has been independently validated us
 ---
 
 ## License
-MIT License. Developed for the **Prasunex Innovathon 2026 (Round 2)**.
+MIT License. Developed for the **Prasunex Innovathon 2026 (Round 3)**.

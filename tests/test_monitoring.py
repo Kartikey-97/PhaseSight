@@ -486,3 +486,32 @@ def test_rolling_stream_burst_stall_triggers_hard_degraded():
     assert res_drops.timing_status == "REJECTED_UNSTABLE"
     assert res_drops.x_axis.available is False
 
+
+def test_browser_media_time_tolerates_151x_interval_without_degraded():
+    """Verify non-override streams tolerate a minor 1.51x frame interval without triggering Welch DEGRADED."""
+    buf = RollingMotionBuffer(capacity=512)
+    fps = 30.0
+    dt_nom = 1.0 / fps
+
+    t_cur = 0.0
+    for i in range(192):
+        if i == 80:
+            t_cur += 1.51 * dt_nom
+        else:
+            t_cur += dt_nom
+        sig = 0.5 * np.sin(2.0 * np.pi * 5.0 * t_cur)
+        buf.append(_make_sample(t=t_cur, rel_dx=sig, response=0.9))
+
+    snap = buf.snapshot()
+    res = analyze_rolling_window(
+        snap, expected_fps=fps, timebase_source="browser_media_time"
+    )
+
+    assert res.state == "ACTIVE"
+    assert res.timebase_source == "browser_media_time"
+    assert res.timing_status in ("STABLE", "WARNING_JITTER")
+    assert res.x_axis.available is True
+    assert res.x_axis.dominant_frequency_hz is not None
+    assert abs(res.x_axis.dominant_frequency_hz - 5.0) < 0.5
+
+

@@ -364,6 +364,13 @@ def analyze_rolling_window(
         tgt_dx = np.interp(all_idx, valid_idx, tgt_dx[valid_idx])
         tgt_dy = np.interp(all_idx, valid_idx, tgt_dy[valid_idx])
 
+    analysis_gap_ratio = (
+        2.5 if timebase_source != "explicit_fps_override" else max_tolerated_gap_ratio
+    )
+    analysis_jitter = (
+        0.22 if timebase_source != "explicit_fps_override" else max_tolerated_jitter
+    )
+
     try:
         rel_x_res = analyse_displacement(
             timestamps,
@@ -371,8 +378,8 @@ def analyze_rolling_window(
             min_frequency_hz=min_frequency_hz,
             max_frequency_hz=usable_max_hz,
             nperseg=nperseg,
-            max_tolerated_gap_ratio=max_tolerated_gap_ratio,
-            max_tolerated_jitter=max_tolerated_jitter,
+            max_tolerated_gap_ratio=analysis_gap_ratio,
+            max_tolerated_jitter=analysis_jitter,
         )
         rel_y_res = analyse_displacement(
             timestamps,
@@ -380,8 +387,8 @@ def analyze_rolling_window(
             min_frequency_hz=min_frequency_hz,
             max_frequency_hz=usable_max_hz,
             nperseg=nperseg,
-            max_tolerated_gap_ratio=max_tolerated_gap_ratio,
-            max_tolerated_jitter=max_tolerated_jitter,
+            max_tolerated_gap_ratio=analysis_gap_ratio,
+            max_tolerated_jitter=analysis_jitter,
         )
         anc_x_res = analyse_displacement(
             timestamps,
@@ -389,8 +396,8 @@ def analyze_rolling_window(
             min_frequency_hz=min_frequency_hz,
             max_frequency_hz=usable_max_hz,
             nperseg=nperseg,
-            max_tolerated_gap_ratio=max_tolerated_gap_ratio,
-            max_tolerated_jitter=max_tolerated_jitter,
+            max_tolerated_gap_ratio=analysis_gap_ratio,
+            max_tolerated_jitter=analysis_jitter,
         )
         anc_y_res = analyse_displacement(
             timestamps,
@@ -398,8 +405,8 @@ def analyze_rolling_window(
             min_frequency_hz=min_frequency_hz,
             max_frequency_hz=usable_max_hz,
             nperseg=nperseg,
-            max_tolerated_gap_ratio=max_tolerated_gap_ratio,
-            max_tolerated_jitter=max_tolerated_jitter,
+            max_tolerated_gap_ratio=analysis_gap_ratio,
+            max_tolerated_jitter=analysis_jitter,
         )
         tgt_x_res = analyse_displacement(
             timestamps,
@@ -407,8 +414,8 @@ def analyze_rolling_window(
             min_frequency_hz=min_frequency_hz,
             max_frequency_hz=usable_max_hz,
             nperseg=nperseg,
-            max_tolerated_gap_ratio=max_tolerated_gap_ratio,
-            max_tolerated_jitter=max_tolerated_jitter,
+            max_tolerated_gap_ratio=analysis_gap_ratio,
+            max_tolerated_jitter=analysis_jitter,
         )
         tgt_y_res = analyse_displacement(
             timestamps,
@@ -416,8 +423,8 @@ def analyze_rolling_window(
             min_frequency_hz=min_frequency_hz,
             max_frequency_hz=usable_max_hz,
             nperseg=nperseg,
-            max_tolerated_gap_ratio=max_tolerated_gap_ratio,
-            max_tolerated_jitter=max_tolerated_jitter,
+            max_tolerated_gap_ratio=analysis_gap_ratio,
+            max_tolerated_jitter=analysis_jitter,
         )
     except ValueError as exc:
         warnings.append(f"Spectral analysis failed: {exc}")

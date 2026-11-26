@@ -526,3 +526,33 @@ def test_custom_video_upload_flow(client: TestClient):
     x_dom = summary["x_axis"]["dominant_frequency_hz"]
     assert 8.0 <= x_dom <= 9.0
     assert summary["x_axis"]["signal_quality"] == "VALID"
+
+
+def test_browser_webcam_ignores_fps_override(client: TestClient):
+    """Ensure browser_webcam enforces timebase_source='browser_media_time' and ignores stale fps_override."""
+    payload = {
+        "source_type": "browser_webcam",
+        "target_roi": {"x": 100, "y": 100, "width": 64, "height": 64},
+        "anchor_roi": {"x": 20, "y": 20, "width": 64, "height": 64},
+        "fps_override": 500.0,
+        "expected_fps": 30.0,
+    }
+    resp = client.post("/api/v1/sessions", json=payload)
+    assert resp.status_code == 201
+    sess_id = resp.json()["session_id"]
+
+    manager = app.dependency_overrides[get_manager]()
+    session = manager.get_session(sess_id)
+    assert session is not None
+    assert session.config.timebase_source == "browser_media_time"
+    assert session.config.expected_fps == 30.0
+
+    telem_resp = client.get(f"/api/v1/sessions/{sess_id}")
+    assert telem_resp.status_code == 200
+    telem = telem_resp.json()
+    assert telem["timebase_source"] == "browser_media_time"
+    assert telem["measured_fps"] == 30.0
+
+    stop_resp = client.post(f"/api/v1/sessions/{sess_id}/stop")
+    assert stop_resp.status_code == 200
+
